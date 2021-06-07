@@ -26,7 +26,7 @@ namespace Servidor
 
             while (true)
             {
-                //aceitar ligaçoes
+                //aceitar lligaçoes
                 TcpClient client = listener.AcceptTcpClient();
                 clientCounter++;
                 Console.WriteLine("Cliente conectados: ", clientCounter);
@@ -71,22 +71,57 @@ namespace Servidor
 
                 switch (protocoloSI.GetCmdType())
                 {
-                    /*case ProtocolSICmdType.USER_OPTION_1: //Login
+                    case ProtocolSICmdType.USER_OPTION_1: //Login
+                        //recupera os dados enviados pelo user no pacote
+                        string msgLogin = protocoloSI.GetStringFromData();
+                        //divide os dados em strings de Nome de utilizador e password
+                        string[] SplitLogin = msgLogin.Split(new Char[] { '|' });
+
+                        username = Convert.ToString(SplitLogin[0]);
+                        stringSaltedPasswordHash = Convert.ToString(SplitLogin[1]);
+
                         byte[] saltedPasswordHash = Convert.FromBase64String(stringSaltedPasswordHash);
 
-                        if (loginRegisto.VerifyLogin(username, saltedPasswordHash){
-
+                        if (loginRegisto.VerifyLogin(username, saltedPasswordHash))
+                        {
+                            Console.WriteLine("Utilizador: " + username + " autorizado!");
                         }
-                               break;
+                        else
+                        {
+                            Console.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");
+                        }
+                        break;
 
                     case ProtocolSICmdType.USER_OPTION_2: //registo
+
+                        string msgRegister = protocoloSI.GetStringFromData();
+                        int i = 0;
+                        string[] SplitRegister = { };
+
+                        //fazer ciclo split
+
+                        username = Convert.ToString(SplitRegister[0]);
+                        stringSaltedPasswordHash = Convert.ToString(SplitRegister[1]);
+                        salt = Convert.ToString(SplitRegister[2]);
+                        chave = Convert.ToString(SplitRegister[3]);
+
+                        //loginRegisto.Register(username, stringSaltedPasswordHash, salt, chave);
+
+                        Console.WriteLine("User" + username + " registado com sucesso ");
+
+                        ack = protocoloSI.Make(ProtocolSICmdType.ACK);
+                        //envia mensagem para stream
+                        networkStream.Write(ack, 0, ack.Length);
+
+                        /*
                         verificarAssinatura v = new verificarAssinatura();
 
                         if (v.Verificar(hash, assinatura))
                         {
                             loginRegisto.Register(username, saltedPasswordHash, salt, chave);
                         }
-                        break;*/
+                        */
+                        break;
 
                     case ProtocolSICmdType.DATA: //mensagem normal
                         Console.WriteLine("Client" + clientId + " : " + protocoloSI.GetStringFromData());
@@ -101,7 +136,7 @@ namespace Servidor
                         //envia mensagem para stream
                         networkStream.Write(ack, 0, ack.Length);
                         break;
-                }                
+                }
             }
             networkStream.Close();
             client.Close();
