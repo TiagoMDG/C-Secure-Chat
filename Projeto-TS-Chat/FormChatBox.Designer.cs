@@ -1,7 +1,7 @@
 ﻿
 namespace Projeto_TS_Chat
 {
-    partial class Form1
+    partial class FormChatBox
     {
         /// <summary>
         /// Required designer variable.
@@ -29,20 +29,12 @@ namespace Projeto_TS_Chat
         /// </summary>
         private void InitializeComponent()
         {
-            this.textBoxChat = new System.Windows.Forms.TextBox();
             this.textBoxMessage = new System.Windows.Forms.TextBox();
             this.buttonEnviar = new System.Windows.Forms.Button();
             this.buttonUpFile = new System.Windows.Forms.Button();
             this.buttonSair = new System.Windows.Forms.Button();
+            this.messageChat = new System.Windows.Forms.ListBox();
             this.SuspendLayout();
-            // 
-            // textBoxChat
-            // 
-            this.textBoxChat.Location = new System.Drawing.Point(13, 13);
-            this.textBoxChat.Multiline = true;
-            this.textBoxChat.Name = "textBoxChat";
-            this.textBoxChat.Size = new System.Drawing.Size(413, 353);
-            this.textBoxChat.TabIndex = 0;
             // 
             // textBoxMessage
             // 
@@ -81,17 +73,26 @@ namespace Projeto_TS_Chat
             this.buttonSair.UseVisualStyleBackColor = true;
             this.buttonSair.Click += new System.EventHandler(this.buttonSair_Click);
             // 
-            // Form1
+            // messageChat
+            // 
+            this.messageChat.FormattingEnabled = true;
+            this.messageChat.Location = new System.Drawing.Point(12, 12);
+            this.messageChat.Name = "messageChat";
+            this.messageChat.SelectionMode = System.Windows.Forms.SelectionMode.None;
+            this.messageChat.Size = new System.Drawing.Size(413, 355);
+            this.messageChat.TabIndex = 5;
+            // 
+            // FormChatBox
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(439, 494);
+            this.Controls.Add(this.messageChat);
             this.Controls.Add(this.buttonSair);
             this.Controls.Add(this.buttonUpFile);
             this.Controls.Add(this.buttonEnviar);
             this.Controls.Add(this.textBoxMessage);
-            this.Controls.Add(this.textBoxChat);
-            this.Name = "Form1";
+            this.Name = "FormChatBox";
             this.Text = "Cliente Chat";
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -99,12 +100,11 @@ namespace Projeto_TS_Chat
         }
 
         #endregion
-
-        private System.Windows.Forms.TextBox textBoxChat;
         private System.Windows.Forms.TextBox textBoxMessage;
         private System.Windows.Forms.Button buttonEnviar;
         private System.Windows.Forms.Button buttonUpFile;
         private System.Windows.Forms.Button buttonSair;
+        private System.Windows.Forms.ListBox messageChat;
     }
 }
 

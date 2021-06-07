@@ -14,7 +14,7 @@ using System.Net;
 
 namespace Projeto_TS_Chat
 {
-    public partial class Form2 : Form
+    public partial class FormLoginPanel : Form
     {
         //protoclo Si e socket de comunicaçao com o servidor
         ProtocolSI protocolSI;
@@ -26,7 +26,7 @@ namespace Projeto_TS_Chat
         private const int SALTSIZE = 8;
         private const int NUMBER_OF_ITERATIONS = 1000;
         
-        public Form2()
+        public FormLoginPanel()
         {
             InitializeComponent();
 
@@ -57,18 +57,9 @@ namespace Projeto_TS_Chat
             } */
 
             this.Hide();
-            Form1 f1 = new Form1();
+            FormChatBox f1 = new FormChatBox();
             f1.ShowDialog();
             this.Close();
-        }
-        private void buttonEnviar_Click(object sender, EventArgs e)
-        {
-            // Preparar mensagem para ser enviada
-            //string msg = textBoxMsg.Text;
-            //textBoxMsg.Clear();
-            
-
-           
         }
         private void buttonRegistar_Click(object sender, EventArgs e)
         {
@@ -81,7 +72,7 @@ namespace Projeto_TS_Chat
             Register(username, hash, salt);
 
             this.Hide();
-            Form1 f1 = new Form1();
+            FormChatBox f1 = new FormChatBox();
             f1.ShowDialog();
             this.Close();
         }

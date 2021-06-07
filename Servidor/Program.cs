@@ -29,7 +29,7 @@ namespace Servidor
                 //aceitar lligaçoes
                 TcpClient client = listener.AcceptTcpClient();
                 clientCounter++;
-                Console.WriteLine("Cliente conectados: ", clientCounter);
+                Console.WriteLine("Clientes conectados: {0}", clientCounter);
                 //utilizar threads
                 ClienteHandler clientHandler = new ClienteHandler(client, clientCounter);
                 clientHandler.Handle();
@@ -124,10 +124,13 @@ namespace Servidor
                         break;
 
                     case ProtocolSICmdType.DATA: //mensagem normal
+
                         Console.WriteLine("Client" + clientId + " : " + protocoloSI.GetStringFromData());
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
+
                         //envia mensagem para stream
                         networkStream.Write(ack, 0, ack.Length);
+
                         break;
 
                     case ProtocolSICmdType.EOT:

@@ -1,7 +1,7 @@
 ﻿
 namespace Projeto_TS_Chat
 {
-    partial class Form2
+    partial class FormLoginPanel
     {
         /// <summary>
         /// Required designer variable.
