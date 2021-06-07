@@ -60,6 +60,7 @@ namespace Projeto_TS_Chat
             this.buttonEnviar.TabIndex = 2;
             this.buttonEnviar.Text = "Enviar";
             this.buttonEnviar.UseVisualStyleBackColor = true;
+            this.buttonEnviar.Click += new System.EventHandler(this.buttonEnviar_Click);
             // 
             // buttonUpFile
             // 

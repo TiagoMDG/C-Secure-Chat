@@ -26,7 +26,7 @@ namespace Servidor
 
             while (true)
             {
-                //aceitar lligaçoes
+                //aceitar ligaçoes
                 TcpClient client = listener.AcceptTcpClient();
                 clientCounter++;
                 Console.WriteLine("Cliente conectados: ", clientCounter);
@@ -71,7 +71,7 @@ namespace Servidor
 
                 switch (protocoloSI.GetCmdType())
                 {
-                    case ProtocolSICmdType.USER_OPTION_1: //Login
+                    /*case ProtocolSICmdType.USER_OPTION_1: //Login
                         byte[] saltedPasswordHash = Convert.FromBase64String(stringSaltedPasswordHash);
 
                         if (loginRegisto.VerifyLogin(username, saltedPasswordHash){
@@ -86,7 +86,7 @@ namespace Servidor
                         {
                             loginRegisto.Register(username, saltedPasswordHash, salt, chave);
                         }
-                        break;
+                        break;*/
 
                     case ProtocolSICmdType.DATA: //mensagem normal
                         Console.WriteLine("Client" + clientId + " : " + protocoloSI.GetStringFromData());

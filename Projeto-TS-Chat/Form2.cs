@@ -16,7 +16,7 @@ namespace Projeto_TS_Chat
 {
     public partial class Form2 : Form
     {
-        //protoclo Si e socket de cominicaçao com o servidor
+        //protoclo Si e socket de comunicaçao com o servidor
         ProtocolSI protocolSI;
         private const int PORT = 10000;
         NetworkStream networkStream;
@@ -64,8 +64,8 @@ namespace Projeto_TS_Chat
         private void buttonEnviar_Click(object sender, EventArgs e)
         {
             // Preparar mensagem para ser enviada
-            string msg = textBoxMsg.Text;
-            textBoxMsg.Clear();
+            //string msg = textBoxMsg.Text;
+            //textBoxMsg.Clear();
             
 
            
