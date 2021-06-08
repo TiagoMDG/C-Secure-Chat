@@ -34,6 +34,7 @@ namespace Projeto_TS_Chat
             this.buttonUpFile = new System.Windows.Forms.Button();
             this.buttonSair = new System.Windows.Forms.Button();
             this.messageChat = new System.Windows.Forms.ListBox();
+            this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.SuspendLayout();
             // 
             // textBoxMessage
@@ -62,6 +63,7 @@ namespace Projeto_TS_Chat
             this.buttonUpFile.TabIndex = 3;
             this.buttonUpFile.Text = "Carregar Ficheiro";
             this.buttonUpFile.UseVisualStyleBackColor = true;
+            this.buttonUpFile.Click += new System.EventHandler(this.buttonUpFile_Click);
             // 
             // buttonSair
             // 
@@ -81,6 +83,10 @@ namespace Projeto_TS_Chat
             this.messageChat.SelectionMode = System.Windows.Forms.SelectionMode.None;
             this.messageChat.Size = new System.Drawing.Size(413, 355);
             this.messageChat.TabIndex = 5;
+            // 
+            // openFileDialog1
+            // 
+            this.openFileDialog1.FileName = "openFileDialog1";
             // 
             // FormChatBox
             // 
@@ -105,6 +111,7 @@ namespace Projeto_TS_Chat
         private System.Windows.Forms.Button buttonUpFile;
         private System.Windows.Forms.Button buttonSair;
         private System.Windows.Forms.ListBox messageChat;
+        private System.Windows.Forms.OpenFileDialog openFileDialog1;
     }
 }
 
