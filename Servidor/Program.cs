@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Sockets;
 using EI.SI;
 using System.Security.Cryptography;
+using System.IO;
 
 namespace Servidor
 {
@@ -60,27 +61,33 @@ namespace Servidor
         {
             NetworkStream networkStream = this.client.GetStream();
             ProtocolSI protocoloSI = new ProtocolSI();
+            AesCryptoServiceProvider aes;
+            byte[] privateKey;
+
+            string username, stringSaltedPasswordHash, salt, chave, hash, assinatura;
+
+            verificarLoginRegisto loginRegisto = new verificarLoginRegisto();
 
             //enquanto a tread nao receber ordem de termino
             while (protocoloSI.GetCmdType() != ProtocolSICmdType.EOT)
             {
                 int bytesRead = networkStream.Read(protocoloSI.Buffer, 0, protocoloSI.Buffer.Length);
                 byte[] ack;
-                string username, stringSaltedPasswordHash, salt, chave, hash, assinatura;
-
-                verificarLoginRegisto loginRegisto = new verificarLoginRegisto();
+                
 
                 switch (protocoloSI.GetCmdType())
                 {
                     case ProtocolSICmdType.PUBLIC_KEY:
+
                         string chavePublica = protocoloSI.GetStringFromData();
                         Console.WriteLine("chave publica: " + chavePublica);
                         ChaveSimetrica cs = new ChaveSimetrica();
-                        string chavePrivada=cs.GerarPrivada(chavePublica);
-
-                       
-                        Console.WriteLine("A chave Privada: " + chavePrivada);
-
+                        string chavePrivada = cs.GerarPrivada(chavePublica);
+                        privateKey = Convert.FromBase64String(chavePrivada);
+                        string chavePrivadaCifrada = cs.CifrarPrivada(chavePrivada);
+                        byte[] msg = protocoloSI.Make(ProtocolSICmdType.SECRET_KEY, chavePrivadaCifrada);
+                        networkStream.Write(msg, 0, msg.Length);
+                        Console.Write("Chave Privada encriptada: " + chavePrivadaCifrada);
                         break;
 
                     case ProtocolSICmdType.USER_OPTION_1: //Login

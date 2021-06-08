@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using EI.SI;
 using System.Net.Sockets;
 using System.Net;
+using System.IO;
 
 namespace Projeto_TS_Chat
 {
@@ -21,14 +22,16 @@ namespace Projeto_TS_Chat
         private const int PORT = 10000;
         NetworkStream networkStream;
         TcpClient client;
-        
         private RSACryptoServiceProvider rsaSign;
-
+        AesCryptoServiceProvider aes;
+        
         //constantes par geral as pass's com salt
         private const int SALTSIZE = 8;
         private const int NUMBER_OF_ITERATIONS = 1000;
-
+        byte[] key;
+        byte[] iv;
         string publicKey;
+        string chavePrivadaDecifrada;
 
         public FormLoginPanel()
         {
@@ -48,9 +51,17 @@ namespace Projeto_TS_Chat
             // Preparação da comunicação utilizando a classe desenvolvida pelo DEI
             protocolSI = new ProtocolSI();
 
-            enviarChavePublica();
+            //inicializar o serviço AES
+            aes = new AesCryptoServiceProvider();
+            //guardar a chave gerada
+            key = aes.Key;
+            //guardar o vetro de de inicialização IV
+            iv = aes.IV;
+
+            enviarReceberChaves();
+         
         }
-        private void enviarChavePublica()
+        private void enviarReceberChaves()
         {
             KeyGenerator k = new KeyGenerator();
 
@@ -59,21 +70,35 @@ namespace Projeto_TS_Chat
             byte[] packet = protocolSI.Make(ProtocolSICmdType.PUBLIC_KEY, publicKey);
             networkStream.Write(packet, 0, packet.Length);
 
+            GerarChavePrivada(publicKey);
+
+            //receber chave privada
+            networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+
+            string chavePrivadaCifrada;
+            chavePrivadaCifrada = protocolSI.GetStringFromData();
+            Console.WriteLine(chavePrivadaCifrada);
+            /*
+            byte[] txtcifrado = Convert.FromBase64String(chavePrivadaCifrada);
+            MemoryStream ms = new MemoryStream(txtcifrado);
+            CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read);
+            //variavel para guardar texto decifrado
+            byte[] textDecifrado = new byte[ms.Length];
+            //variavel para numeros de bytes decifrados
+            int bytesLidos = 0;
+            bytesLidos = cs.Read(textDecifrado, 0, textDecifrado.Length);
+            cs.Close();
+            //converter para texto
+            chavePrivadaDecifrada = Encoding.UTF8.GetString(textDecifrado, 0, textDecifrado.Length);
+
+            Console.WriteLine(chavePrivadaDecifrada);
+            */
         }
 
         private void buttonLogin_Click(object sender, EventArgs e)
         {
             String password = textBoxPwLogin.Text;
             String username = textBoxUserLogin.Text;
-
-            /* if (VerifyLogin(username, password))
-            {
-                MessageBox.Show("O utilizador está válido");
-            }
-            else
-            {
-                MessageBox.Show("Login inválido");
-            } */
 
             this.Hide();
             FormChatBox f1 = new FormChatBox();
@@ -130,6 +155,51 @@ namespace Projeto_TS_Chat
             Rfc2898DeriveBytes rfc2898 = new Rfc2898DeriveBytes(plainText, salt, NUMBER_OF_ITERATIONS);
             return rfc2898.GetBytes(32);
         }
-        
+
+        private string GerarPrivada(string chavePublicaCliente)
+        {
+            //INICIALIZAR SERVIÇO DE CIFRAGEM AES
+            aes = new AesCryptoServiceProvider();
+            //GUARDAR A CHAVE GERADA
+            key = aes.Key;
+            //GUARDAR O VETOR DE INICIALIZAÇÃO GERADO
+            iv = aes.IV;
+
+            //IR BUSCAR CHAVE E IV 
+            string keyB64 = GerarChavePrivada(chavePublicaCliente);
+            string ivB64 = GerarIv(chavePublicaCliente);
+            Console.WriteLine("A chave Privada: " + keyB64);
+            Console.WriteLine("O vetor de Inicialização: " + ivB64);
+
+            //CONVERTER DE BASE64 PARA BYTES E SUBSTITUIR NO AES
+            aes.Key = Convert.FromBase64String(keyB64);
+            aes.IV = Convert.FromBase64String(ivB64);
+            return keyB64;
+        }
+
+        private string GerarChavePrivada(string pass)
+        {
+            byte[] salt = new byte[] { 0, 1, 0, 8, 2, 9, 9, 7 };
+            Rfc2898DeriveBytes pwdGen = new Rfc2898DeriveBytes(pass, salt, 1000);
+            //GERAR KEY
+            byte[] key = pwdGen.GetBytes(16);
+            //CONVERTER A PASS PARA BASE64
+            string passB64 = Convert.ToBase64String(key);
+            //DEVOLVER A PASS EM BYTES
+            return passB64;
+        }
+
+        //GERAR UM VETOR DE INICIALIZAÇÃO A PARTIR DE UMA STRING
+        private string GerarIv(string pass)
+        {
+            byte[] salt = new byte[] { 7, 8, 7, 8, 2, 5, 9, 5 };
+            Rfc2898DeriveBytes pwdGen = new Rfc2898DeriveBytes(pass, salt, 1000);
+            //GERAR UMA KEY
+            byte[] iv = pwdGen.GetBytes(16);
+            //CONVERTER PARA BASE64
+            string ivB64 = Convert.ToBase64String(iv);
+            //DEVOLVER EM BYTES
+            return ivB64;
+        }
     }
 }

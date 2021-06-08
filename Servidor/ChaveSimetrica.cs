@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -58,5 +59,25 @@ namespace Servidor
             //DEVOLVER EM BYTES
             return ivB64;
         }
+
+        public string CifrarPrivada(string chavePrivada)
+        {
+            byte[] chavePrivadaParaCifrar = Encoding.UTF8.GetBytes(chavePrivada);
+            byte[] chavePrivadaCifrada;
+
+            //reservar memoria para o processo de cifragem
+            MemoryStream ms = new MemoryStream();
+            //inicializar o sistema de cifragem
+            CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
+            //cifrar os dados
+            cs.Write(chavePrivadaParaCifrar, 0, chavePrivadaParaCifrar.Length);
+            cs.Close();
+            //guardar os dados cifrados que estão em memória
+            chavePrivadaCifrada = ms.ToArray();
+            //converter texto cifrado em base 64
+            string strChavePrivadaCifrada = Convert.ToBase64String(chavePrivadaCifrada);
+            return strChavePrivadaCifrada;
+        }
+
     }
 }
