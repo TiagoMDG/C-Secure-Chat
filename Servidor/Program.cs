@@ -105,7 +105,7 @@ namespace Servidor
                         salt = Convert.ToString(SplitRegister[2]);
                         chave = Convert.ToString(SplitRegister[3]);
 
-                        //loginRegisto.Register(username, stringSaltedPasswordHash, salt, chave);
+                        loginRegisto.Register(username, stringSaltedPasswordHash, salt, chave);
 
                         Console.WriteLine("User" + username + " registado com sucesso ");
 
