@@ -152,7 +152,7 @@ namespace Projeto_TS_Chat
         private void CloseClient()
         {
             // Preparar envio da mensagem para desligar a ligação
-            byte[] eot = protocolSI.Make(ProtocolSICmdType.EOF);
+            byte[] eot = protocolSI.Make(ProtocolSICmdType.EOT);
             networkStream.Write(eot, 0, eot.Length);
             networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
             networkStream.Close();
