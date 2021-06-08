@@ -61,6 +61,7 @@
     <Compile Include="FormLoginPanel.Designer.cs">
       <DependentUpon>FormLoginPanel.cs</DependentUpon>
     </Compile>
+    <Compile Include="KeyGenerator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="FormChatBox.resx">

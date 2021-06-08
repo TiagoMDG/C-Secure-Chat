@@ -95,8 +95,13 @@ namespace Servidor
                     case ProtocolSICmdType.USER_OPTION_2: //registo
 
                         string msgRegister = protocoloSI.GetStringFromData();
-                        int i = 0;
                         string[] SplitRegister = { };
+
+                        for (int i = 0; i < msgRegister.Length; i++)
+                        {
+                            SplitRegister = msgRegister.Split(new Char[] { '|' });
+                        }
+                        
 
                         //fazer ciclo split
 
@@ -140,6 +145,10 @@ namespace Servidor
                         networkStream.Write(ack, 0, ack.Length);
                         break;
                 }
+                Console.WriteLine("Ending thread from client {0}" + clientId);
+                        ack = protocoloSI.Make(ProtocolSICmdType.ACK);
+                        //envia mensagem para stream
+                        networkStream.Write(ack, 0, ack.Length);
             }
             networkStream.Close();
             client.Close();

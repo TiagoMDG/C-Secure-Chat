@@ -17,7 +17,7 @@ namespace Projeto_TS_Chat
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             //Application.Run(new Form1());
-            Application.Run(new FormChatBox());
+            Application.Run(new FormLoginPanel());
         }
     }
 }

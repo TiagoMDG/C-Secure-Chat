@@ -10,8 +10,11 @@ namespace Servidor
     class verificarAssinatura
     {
         private RSACryptoServiceProvider rsaVerify;
-        public bool Verificar(string hash, string assinatura)
+
+        public bool Verificar(string hash, string assinatura, string publicKey)
         {
+            rsaVerify.FromXmlString(publicKey);
+
             byte[] hashUser = Convert.FromBase64String(hash);
             byte[] assUser = Convert.FromBase64String(assinatura);
             bool verify = rsaVerify.VerifyHash(hashUser, CryptoConfig.MapNameToOID("SHA256"), assUser);

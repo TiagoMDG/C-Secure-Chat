@@ -22,6 +22,8 @@ namespace Projeto_TS_Chat
         NetworkStream networkStream;
         TcpClient client;
 
+        private RSACryptoServiceProvider rsaSign;
+
         //constantes par geral as pass's com salt
         private const int SALTSIZE = 8;
         private const int NUMBER_OF_ITERATIONS = 1000;
@@ -34,6 +36,9 @@ namespace Projeto_TS_Chat
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, PORT);
             client = new TcpClient();
             client.Connect(endPoint);
+
+            rsaSign = new RSACryptoServiceProvider();
+            string publicKey = rsaSign.ToXmlString(false);
 
             //Obter um fluxo de clientes para leitura e escrita
             networkStream = client.GetStream();
@@ -69,7 +74,11 @@ namespace Projeto_TS_Chat
             byte[] salt = GenerateSalt(SALTSIZE);
             byte[] hash = GenerateSaltedHash(pass, salt);
 
-            Register(username, hash, salt);
+            KeyGenerator k = new KeyGenerator();
+
+            string publicKey = k.generator();
+
+            Register(username, hash, salt, publicKey);
 
             this.Hide();
             FormChatBox f1 = new FormChatBox();
@@ -77,7 +86,7 @@ namespace Projeto_TS_Chat
             this.Close();
         }
 
-        private void Register(string user, byte[] passHash, byte[] passSalt)
+        private void Register(string user, byte[] passHash, byte[] passSalt, string publicKey)
         {
             //registar opçao SI USER_OPTION_2
             //converter encriptaçao para string para ser enviado
@@ -85,10 +94,10 @@ namespace Projeto_TS_Chat
             string passwordSalt = Convert.ToBase64String(passSalt);
 
             //mensagem a enviar
-            string[] msg = new string[3] { user, passwordHash, passwordSalt };
+            string msg =  user+'|'+ passwordHash + '|' + passwordSalt + '|' + publicKey;
 
             //pacote a enviar pelo protocolo SI
-            byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_2, user);
+            byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_2, msg);
 
             // Enviar mensagem
             networkStream.Write(packet, 0, packet.Length);
@@ -112,5 +121,6 @@ namespace Projeto_TS_Chat
             Rfc2898DeriveBytes rfc2898 = new Rfc2898DeriveBytes(plainText, salt, NUMBER_OF_ITERATIONS);
             return rfc2898.GetBytes(32);
         }
+        
     }
 }
