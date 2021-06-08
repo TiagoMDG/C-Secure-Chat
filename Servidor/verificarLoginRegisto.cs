@@ -62,11 +62,8 @@ namespace Servidor
             }
         }
 
-        public void Register(string username, string passComsalt, string modificadorPass, string key)
-        {
-            byte[] saltedPasswordHash = Convert.FromBase64String(passComsalt);
-            byte[] salt = Convert.FromBase64String(modificadorPass);
-
+        public void Register(string username, byte[] saltedPasswordHash, byte[] salt, string key)
+        {       
             SqlConnection conn = null;
             try
             {

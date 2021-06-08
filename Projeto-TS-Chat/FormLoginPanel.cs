@@ -21,13 +21,15 @@ namespace Projeto_TS_Chat
         private const int PORT = 10000;
         NetworkStream networkStream;
         TcpClient client;
-
+        
         private RSACryptoServiceProvider rsaSign;
 
         //constantes par geral as pass's com salt
         private const int SALTSIZE = 8;
         private const int NUMBER_OF_ITERATIONS = 1000;
-        
+
+        string publicKey;
+
         public FormLoginPanel()
         {
             InitializeComponent();
@@ -45,6 +47,18 @@ namespace Projeto_TS_Chat
 
             // Preparação da comunicação utilizando a classe desenvolvida pelo DEI
             protocolSI = new ProtocolSI();
+
+            enviarChavePublica();
+        }
+        private void enviarChavePublica()
+        {
+            KeyGenerator k = new KeyGenerator();
+
+            publicKey = k.generator();
+
+            byte[] packet = protocolSI.Make(ProtocolSICmdType.PUBLIC_KEY, publicKey);
+            networkStream.Write(packet, 0, packet.Length);
+
         }
 
         private void buttonLogin_Click(object sender, EventArgs e)
@@ -70,13 +84,8 @@ namespace Projeto_TS_Chat
         {
             String pass = textBoxPwRegistar.Text;
             String username = textBoxUserRegistar.Text;
-
             byte[] salt = GenerateSalt(SALTSIZE);
             byte[] hash = GenerateSaltedHash(pass, salt);
-
-            KeyGenerator k = new KeyGenerator();
-
-            string publicKey = k.generator();
 
             Register(username, hash, salt, publicKey);
 

@@ -7,18 +7,19 @@ using System.Threading;
 using System.Net;
 using System.Net.Sockets;
 using EI.SI;
+using System.Security.Cryptography;
 
 namespace Servidor
 {
     class Program
     {
         private const int port = 10000;
+        
 
         static void Main(string[] args)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, port);
             TcpListener listener = new TcpListener(endPoint);
-
             //iniciar o servidor
             listener.Start();
             Console.WriteLine("Server is ready! Super Ready!");
@@ -71,6 +72,17 @@ namespace Servidor
 
                 switch (protocoloSI.GetCmdType())
                 {
+                    case ProtocolSICmdType.PUBLIC_KEY:
+                        string chavePublica = protocoloSI.GetStringFromData();
+                        Console.WriteLine("chave publica: " + chavePublica);
+                        ChaveSimetrica cs = new ChaveSimetrica();
+                        string chavePrivada=cs.GerarPrivada(chavePublica);
+
+                       
+                        Console.WriteLine("A chave Privada: " + chavePrivada);
+
+                        break;
+
                     case ProtocolSICmdType.USER_OPTION_1: //Login
                         //recupera os dados enviados pelo user no pacote
                         string msgLogin = protocoloSI.GetStringFromData();
@@ -93,7 +105,7 @@ namespace Servidor
                         break;
 
                     case ProtocolSICmdType.USER_OPTION_2: //registo
-
+                        /*
                         string msgRegister = protocoloSI.GetStringFromData();
                         string[] SplitRegister = { };
 
@@ -112,19 +124,9 @@ namespace Servidor
 
                         loginRegisto.Register(username, stringSaltedPasswordHash, salt, chave);
 
-                        Console.WriteLine("User" + username + " registado com sucesso ");
-
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
                         //envia mensagem para stream
                         networkStream.Write(ack, 0, ack.Length);
-
-                        /*
-                        verificarAssinatura v = new verificarAssinatura();
-
-                        if (v.Verificar(hash, assinatura))
-                        {
-                            loginRegisto.Register(username, saltedPasswordHash, salt, chave);
-                        }
                         */
                         break;
 
@@ -145,10 +147,6 @@ namespace Servidor
                         networkStream.Write(ack, 0, ack.Length);
                         break;
                 }
-                Console.WriteLine("Ending thread from client {0}" + clientId);
-                        ack = protocoloSI.Make(ProtocolSICmdType.ACK);
-                        //envia mensagem para stream
-                        networkStream.Write(ack, 0, ack.Length);
             }
             networkStream.Close();
             client.Close();
