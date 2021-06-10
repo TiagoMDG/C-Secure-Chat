@@ -75,7 +75,6 @@ namespace Servidor
         {
             NetworkStream networkStream = this.client.GetStream();
             ProtocolSI protocoloSI = new ProtocolSI();
-            ChaveSimetrica cs = new ChaveSimetrica();
             Globals global = new Globals();
             aes = new AesCryptoServiceProvider();
             
@@ -96,14 +95,13 @@ namespace Servidor
 
                         string chavePublica = protocoloSI.GetStringFromData();
                         global.chavepublica = chavePublica;
-                        string chavePrivada = cs.GerarPrivada(chavePublica);
-                        
+                        string chavePrivada = GerarChavePrivada(chavePublica);
                         global.privateKey = Convert.FromBase64String(chavePrivada);
 
-                        global.privateKeyIV = Convert.FromBase64String(cs.GerarIv(chavePublica));
+                        global.privateKeyIV = Convert.FromBase64String(GerarIv(chavePublica));
                         aes.Key = global.privateKey;
                         aes.IV = global.privateKeyIV;
-                        string chavePrivadaCifrada = cs.CifrarPrivada(chavePrivada);
+                        string chavePrivadaCifrada = CifrarTexto(chavePrivada);
                         byte[] msg = protocoloSI.Make(ProtocolSICmdType.SECRET_KEY, chavePrivadaCifrada);
                         networkStream.Write(msg, 0, msg.Length);
 
@@ -166,12 +164,10 @@ namespace Servidor
 
                         Console.WriteLine("User: "+ clientID + " enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
                         string msgResposta = "Mensagem recebida pelos nossos servidores, obrigado por nos escolher.";
-                        Console.WriteLine(CifrarTexto(msgResposta));
-                        Console.WriteLine(DecifrarTexto(CifrarTexto(msgResposta)));
+
                         //Enviar mensagem de confirmaçao de recepçao para o cliente
                         byte[] packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));
-
-                        //enviar mensagem
+                        
                         networkStream.Write(packet, 0, packet.Length);
 
                         break;
