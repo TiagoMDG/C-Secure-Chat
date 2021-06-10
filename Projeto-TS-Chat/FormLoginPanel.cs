@@ -57,7 +57,7 @@ namespace Projeto_TS_Chat
             iv = aes.IV;
 
             enviarReceberChaves();
-         
+
         }
         private string GerarChavePublica()
         {
