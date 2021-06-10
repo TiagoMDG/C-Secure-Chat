@@ -30,7 +30,7 @@ namespace Projeto_TS_Chat
         const string PubKeyFile = @"c:\z_TS\encrypt\rsaPublicKey.txt";
         const string keyName = "Key01";
 
-        string publickey, keyB64, ivB64;
+        string publickey;
         int bytesRead = 0;
 
         private const int SALTSIZE = 8;
@@ -38,6 +38,8 @@ namespace Projeto_TS_Chat
 
         string publicKey;
         string chavePrivadaDecifrada;
+
+        string username;
 
         private byte[] key;
         private byte[] iv;
@@ -68,6 +70,7 @@ namespace Projeto_TS_Chat
             ////guardar o vetor de inicialização IV
             iv = aes.IV;
 
+            DisableChat();
             enviarReceberChaves();
         }
 
@@ -110,7 +113,7 @@ namespace Projeto_TS_Chat
             // Preparar mensagem para ser enviada
             string msg = textBoxMessage.Text;
             textBoxMessage.Clear();
-            messageChat.Items.Add("Utilizador: "+msg);
+            messageChat.Items.Add(username + ": "+msg);
             
             //preparar a mensagem para ser enviada
             byte[] packet = protocolSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msg));
@@ -120,12 +123,13 @@ namespace Projeto_TS_Chat
             bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
 
             string msgRecebida = protocolSI.GetStringFromData();
-            messageChat.Items.Add(" enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
-            Console.WriteLine(" enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
+            messageChat.Items.Add("Server: " + DecifrarTexto(msgRecebida));
         }
 
         private void buttonSair_Click(object sender, EventArgs e)
         {
+            System.IO.File.WriteAllLines("log.txt", messageChat.Items.Cast<string>().ToArray());
+
             CloseClient();
             this.Close();
         }
@@ -196,7 +200,7 @@ namespace Projeto_TS_Chat
             string txtCifradoB64 = Convert.ToBase64String(txtCifrado);
             //DEVOLVER OS BYTES CRIADOS EM BASE64
             return txtCifradoB64;
-        }   // Verificado
+        }   
 
         private string DecifrarTexto(string txtCifradoB64)
         {
@@ -218,7 +222,7 @@ namespace Projeto_TS_Chat
             string textoDecifrado = Encoding.UTF8.GetString(txtDecifrado, 0, bytesLidos);
             //DEVOLVER TEXTO DECRIFRADO
             return textoDecifrado;
-        }  // Verificado
+        }  
 
         private void EncryptFile(string inFile)
         {
@@ -350,7 +354,11 @@ namespace Projeto_TS_Chat
             networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
             if (protocolSI.GetCmdType() == ProtocolSICmdType.ACK)
             {
-
+                EnableChat();
+                username = textBoxUserLogin.Text;
+                textBoxUserLogin.Clear();
+                textBoxPwLogin.Clear();
+                MessageBox.Show("Seja Bem-vindo " + username + "!", "Login efetuado com sucesso!", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
@@ -393,6 +401,22 @@ namespace Projeto_TS_Chat
         {
             Rfc2898DeriveBytes rfc2898 = new Rfc2898DeriveBytes(plainText, salt, NUMBER_OF_ITERATIONS);
             return rfc2898.GetBytes(32);
+        }
+
+        private void DisableChat()
+        {
+            textBoxMessage.Enabled = false;
+            messageChat.Enabled = false;
+            buttonEnviar.Enabled = false;
+            buttonUpFile.Enabled = false;
+        }
+
+        private void EnableChat()
+        {
+            textBoxMessage.Enabled = true;
+            messageChat.Enabled = true;
+            buttonEnviar.Enabled = true;
+            buttonUpFile.Enabled = true;
         }
 
         private void rsakey()

@@ -74,6 +74,7 @@ namespace Projeto_TS_Chat
             // 
             // buttonUpFile
             // 
+            this.buttonUpFile.AllowDrop = true;
             this.buttonUpFile.Location = new System.Drawing.Point(244, 439);
             this.buttonUpFile.Name = "buttonUpFile";
             this.buttonUpFile.Size = new System.Drawing.Size(88, 43);

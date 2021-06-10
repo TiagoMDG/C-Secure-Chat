@@ -22,9 +22,12 @@ namespace Servidor
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, port);
             TcpListener listener = new TcpListener(endPoint);
+            
+
             //iniciar o servidor
             listener.Start();
             Console.WriteLine("Server is ready! Super Ready!");
+
             int clientCounter = 0;
 
             while (true)
@@ -44,6 +47,7 @@ namespace Servidor
         public Byte[] privateKey;
         public Byte[] privateKeyIV;
         public string chavepublica;
+        public string username;
     }
     class ClienteHandler
     {
@@ -51,7 +55,6 @@ namespace Servidor
         private int clientID;
         //construtor da classe
 
-      
         AesCryptoServiceProvider aes;
 
         
@@ -77,9 +80,10 @@ namespace Servidor
             ProtocolSI protocoloSI = new ProtocolSI();
             Globals global = new Globals();
             aes = new AesCryptoServiceProvider();
-            
+            StreamWriter sw = new StreamWriter("ConsoleLog.txt");
 
-            string username,password, stringSaltedPasswordHash, salt, chave;
+
+            string password, stringSaltedPasswordHash, salt, chave;
 
             verificarLoginRegisto loginRegisto = new verificarLoginRegisto();
 
@@ -105,6 +109,9 @@ namespace Servidor
                         byte[] msg = protocoloSI.Make(ProtocolSICmdType.SECRET_KEY, chavePrivadaCifrada);
                         networkStream.Write(msg, 0, msg.Length);
 
+                        sw.WriteLine("Chave Publica: " + chavePublica);
+                        sw.WriteLine("Chave Privada: " + chavePrivada);
+
                         break;
 
                     case ProtocolSICmdType.USER_OPTION_1: //Login
@@ -119,7 +126,9 @@ namespace Servidor
 
                         if (loginRegisto.VerifyLogin(username, password))
                         {
-                            Console.WriteLine("Utilizador: " + username + " autorizado!");
+                            Console.WriteLine("Utilizador " + username + " autorizado!");
+                            sw.WriteLine("\nUtilizador " + username + " autorizado!");
+
                             ack = protocoloSI.Make(ProtocolSICmdType.ACK);
                             //envia mensagem para stream
                             networkStream.Write(ack, 0, ack.Length);
@@ -127,10 +136,11 @@ namespace Servidor
                         else
                         {
                             Console.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");
+                            sw.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");
+
                             ack = protocoloSI.Make(ProtocolSICmdType.EOT);
                             //envia mensagem para stream
                             networkStream.Write(ack, 0, ack.Length);
-                            
                         }
                         break;
 
@@ -162,18 +172,21 @@ namespace Servidor
 
                         string msgRecebida = protocoloSI.GetStringFromData();
 
-                        Console.WriteLine("User: "+ clientID + " enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
+                        Console.WriteLine(username +"("+ clientID +")" + " enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
                         string msgResposta = "Mensagem recebida pelos nossos servidores, obrigado por nos escolher.";
+
+                        sw.WriteLine(username + ": " + DecifrarTexto(msgRecebida));
+                        sw.WriteLine("Server: " + msgResposta);
 
                         //Enviar mensagem de confirmaçao de recepçao para o cliente
                         byte[] packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));
                         
                         networkStream.Write(packet, 0, packet.Length);
-
                         break;
 
                     case ProtocolSICmdType.EOT:
-                        Console.WriteLine("Ending thread from client {0}" + clientID);
+                        Console.WriteLine("Ending thread from client {0}({1})", username,clientID);
+                        sw.WriteLine("Ending thread from client {0}({1})", username, clientID);
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
                         //envia mensagem para stream
                         networkStream.Write(ack, 0, ack.Length);
@@ -181,9 +194,11 @@ namespace Servidor
                 }
             }            
             networkStream.Close();
-            client.Close();            
-        }
+            client.Close();
+            sw.Close();
 
+            //Environment.Exit(0);
+        }
 
 
         //funções 
