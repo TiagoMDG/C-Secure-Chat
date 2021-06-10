@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,14 +10,16 @@ namespace Servidor
 {
     class verificarLoginRegisto
     {
-        public bool VerifyLogin(string username, byte[] passwordSaltedHash)
+        private const int NUMBER_OF_ITERATIONS = 1000;
+
+        public bool VerifyLogin(string username, string password)
         {
             SqlConnection conn = null;
             try
             {
                 // Configurar ligação à Base de Dados
                 conn = new SqlConnection();
-                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='Users.mdf';Integrated Security=True");
+                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\Pedro Lourenço\Documents\Aulas\PSI_TS_PL1\Servidor\Users.mdf';Integrated Security=True");
 
                 // Abrir ligação à Base de Dados
                 conn.Open();
@@ -46,30 +49,39 @@ namespace Servidor
                 // Ler resultado da pesquisa
                 reader.Read();
 
-                // Obter Hash (password da BD)
+                // Obter Hash (password + salt)
                 byte[] saltedPasswordHashStored = (byte[])reader["SaltedPasswordHash"];
+
+                // Obter salt
+                byte[] saltStored = (byte[])reader["Salt"];
 
                 conn.Close();
 
                 //Verificar se a password na base de dados 
-                return saltedPasswordHashStored.SequenceEqual(passwordSaltedHash);
+                byte[] hash = GenerateSaltedHash(password, saltStored);
+                return saltedPasswordHashStored.SequenceEqual(hash);
+                //throw new NotImplementedException();
             }
-
             catch (Exception e)
             {
-                Console.WriteLine("An error occurred: " + e.Message);
+                throw new Exception("An error occurred: " + e.Message);
                 return false;
             }
         }
 
-        public void Register(string username, byte[] saltedPasswordHash, byte[] salt, string key)
+        private static byte[] GenerateSaltedHash(string plainText, byte[] salt)
+        {
+            Rfc2898DeriveBytes rfc2898 = new Rfc2898DeriveBytes(plainText, salt, NUMBER_OF_ITERATIONS);
+            return rfc2898.GetBytes(32);
+        }
+        public void Register(string username, byte[] saltedPasswordHash, byte[] salt)
         {       
             SqlConnection conn = null;
             try
             {
                 // Configurar ligação à Base de Dados
                 conn = new SqlConnection();
-                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\Pedro Lourenço\Documents\Aulas\Fundamentos de programação\Covidproject\Projeto-TS-Chat\Servidor\Users.mdf';Integrated Security=True");
+                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\Pedro Lourenço\Documents\Aulas\PSI_TS_PL1\Servidor\Users.mdf';Integrated Security=True");
 
                 // Abrir ligação à Base de Dados
                 conn.Open();
@@ -78,10 +90,9 @@ namespace Servidor
                 SqlParameter paramUsername = new SqlParameter("@username", username);
                 SqlParameter paramPassHash = new SqlParameter("@saltedPasswordHash", saltedPasswordHash);
                 SqlParameter paramSalt = new SqlParameter("@salt", salt);
-                SqlParameter paramKey = new SqlParameter("@publickey", key);
 
                 // Declaração do comando SQL
-                String sql = "INSERT INTO Users (Username, SaltedPasswordHash, Salt, publickey) VALUES (@username,@saltedPasswordHash,@salt,@publickey)";
+                String sql = "INSERT INTO Users (Username, SaltedPasswordHash, Salt) VALUES (@username,@saltedPasswordHash,@salt)";
 
                 // Prepara comando SQL para ser executado na Base de Dados
                 SqlCommand cmd = new SqlCommand(sql, conn);
@@ -90,7 +101,6 @@ namespace Servidor
                 cmd.Parameters.Add(paramUsername);
                 cmd.Parameters.Add(paramPassHash);
                 cmd.Parameters.Add(paramSalt);
-                cmd.Parameters.Add(paramKey);
 
                 // Executar comando SQL
                 int lines = cmd.ExecuteNonQuery();

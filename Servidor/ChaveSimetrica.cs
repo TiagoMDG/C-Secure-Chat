@@ -5,19 +5,21 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using EI.SI;
+
 
 namespace Servidor
-{
+{    
     class ChaveSimetrica
     {
-        AesCryptoServiceProvider aes;
-        byte[] key;
-        byte[] iv;
+        AesCryptoServiceProvider aes=new AesCryptoServiceProvider();
+        public byte[] key;
+        public byte[] iv;
 
         public string GerarPrivada(string chavePublicaCliente)
         {
             //INICIALIZAR SERVIÇO DE CIFRAGEM AES
-            aes = new AesCryptoServiceProvider();
+            
             //GUARDAR A CHAVE GERADA
             key = aes.Key;
             //GUARDAR O VETOR DE INICIALIZAÇÃO GERADO
@@ -26,8 +28,8 @@ namespace Servidor
             //IR BUSCAR CHAVE E IV 
             string keyB64 = GerarChavePrivada(chavePublicaCliente);
             string ivB64 = GerarIv(chavePublicaCliente);
-            Console.WriteLine("A chave Privada: " + keyB64);
-            Console.WriteLine("O vetor de Inicialização: " + ivB64);
+            //Console.WriteLine("A chave Privada: " + keyB64);
+            //Console.WriteLine("O vetor de Inicialização: " + ivB64);
 
             //CONVERTER DE BASE64 PARA BYTES E SUBSTITUIR NO AES
             aes.Key = Convert.FromBase64String(keyB64);
@@ -48,7 +50,7 @@ namespace Servidor
         }
 
         //GERAR UM VETOR DE INICIALIZAÇÃO A PARTIR DE UMA STRING
-        private string GerarIv(string pass)
+        public string GerarIv(string pass)
         {
             byte[] salt = new byte[] { 7, 8, 7, 8, 2, 5, 9, 5 };
             Rfc2898DeriveBytes pwdGen = new Rfc2898DeriveBytes(pass, salt, 1000);
@@ -79,5 +81,25 @@ namespace Servidor
             return strChavePrivadaCifrada;
         }
 
+        public string DecifrarTexto(string txtCifradoB64, byte[] privateKey, byte[] privateKeyIV)
+        {
+            //VARIÁVEL PARA GUARDAR O TEXTO CIFRADO EM BYTES
+            byte[] txtCifrado = Convert.FromBase64String(txtCifradoB64);
+            //RESERVAR ESPAÇO NA MEMÓRIA PARA COLOCAR O TEXTO E CIFRÁ-LO
+            MemoryStream ms = new MemoryStream(txtCifrado);
+            //INICIALIZAR O SISTEMA DE CIFRAGEM (READ)
+
+            CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(privateKey, privateKeyIV), CryptoStreamMode.Read);
+
+            //variavel para guardar texto decifrado
+            byte[] textDecifrado = new byte[ms.Length];
+            //variavel para numeros de bytes decifrados
+            int bytesLidos = 0;
+            bytesLidos = cs.Read(textDecifrado, 0, textDecifrado.Length);
+            cs.Close();
+            //converter para texto
+            string txtConvertido = Encoding.UTF8.GetString(textDecifrado, 0, bytesLidos);
+            return txtConvertido;
+        }
     }
 }

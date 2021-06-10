@@ -23,12 +23,21 @@ namespace Projeto_TS_Chat
         NetworkStream networkStream;
         TcpClient client;
         CspParameters cspp = new CspParameters();
-        RSACryptoServiceProvider rsa;
+        private RSACryptoServiceProvider rsa;
 
         const string EncrFolder = @"c:\z_TS\Encrypt\";
         const string SrcFolder = @"c:\z_TS\Encrypt\";
         const string PubKeyFile = @"c:\z_TS\encrypt\rsaPublicKey.txt";
         const string keyName = "Key01";
+
+        byte[] chavePrivadaDecifrada;
+
+        string publickey, keyB64, ivB64;
+        int bytesRead = 0;
+
+        private byte[] key;
+        private byte[] iv;
+        AesCryptoServiceProvider aes;
 
         public FormChatBox()
         {
@@ -47,79 +56,8 @@ namespace Projeto_TS_Chat
 
             // Preparação da comunicação utilizando a classe desenvolvida pelo DEI
             protocolSI = new ProtocolSI();
-        }
 
-        private void EncryptAesManaged(string raw)
-        {
-            // Create Aes that generates a new key and initialization vector (IV).    
-            // Same key must be used in encryption and decryption    
-            using (AesManaged aes = new AesManaged())
-            {
-                // Encrypt string    
-                byte[] encrypted = Encrypt(raw, aes.Key, aes.IV);
-                // Print encrypted string    
-                // Decrypt the bytes to a string.    
-                string decrypted = Decrypt(encrypted, aes.Key, aes.IV);
-                // Print decrypted string. It should be same as raw data    
 
-                byte[] packet = protocolSI.Make(ProtocolSICmdType.DATA, encrypted);
-                networkStream.Write(packet, 0, packet.Length);
-
-                while (protocolSI.GetCmdType() != ProtocolSICmdType.ACK)
-                {
-                    networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
-                } 
-
-                messageChat.Items.Add("You: " + decrypted);
-            }
-        }
-        static byte[] Encrypt(string plainText, byte[] Key, byte[] IV)
-        {
-            byte[] encrypted;
-            // Create a new AesManaged.    
-            using (AesManaged aes = new AesManaged())
-            {
-                // Create encryptor    
-                ICryptoTransform encryptor = aes.CreateEncryptor(Key, IV);
-                // Create MemoryStream    
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    // Create crypto stream using the CryptoStream class. This class is the key to encryption    
-                    // and encrypts and decrypts data from any given stream. In this case, we will pass a memory stream    
-                    // to encrypt    
-                    using (CryptoStream cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
-                    {
-                        // Create StreamWriter and write data to a stream    
-                        using (StreamWriter sw = new StreamWriter(cs))
-                            sw.Write(plainText);
-                        encrypted = ms.ToArray();
-                    }
-                }
-            }
-            // Return encrypted data    
-            return encrypted;
-        }
-        static string Decrypt(byte[] cipherText, byte[] Key, byte[] IV)
-        {
-            string plaintext = null;
-            // Create AesManaged    
-            using (AesManaged aes = new AesManaged())
-            {
-                // Create a decryptor    
-                ICryptoTransform decryptor = aes.CreateDecryptor(Key, IV);
-                // Create the streams used for decryption.    
-                using (MemoryStream ms = new MemoryStream(cipherText))
-                {
-                    // Create crypto stream    
-                    using (CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
-                    {
-                        // Read crypto stream    
-                        using (StreamReader reader = new StreamReader(cs))
-                            plaintext = reader.ReadToEnd();
-                    }
-                }
-            }
-            return plaintext;
         }
 
         private void buttonEnviar_Click(object sender, EventArgs e)
@@ -127,28 +65,15 @@ namespace Projeto_TS_Chat
             // Preparar mensagem para ser enviada
             string msg = textBoxMessage.Text;
             textBoxMessage.Clear();
-            EncryptAesManaged(msg);
+            
+            
+            //preparar a mensagem para ser enviada
+            byte[] packet = protocolSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msg));
+
+            //enviar mensagem
+            networkStream.Write(packet, 0, packet.Length);
+            bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
         }
-
-    /*public string EncryptMsg(string msg)  //SHA256 Encrypt
-        {
-            AesManaged aes = new AesManaged();
-            ICryptoTransform encryptor = aes.CreateEncryptor(Key, IV);
-            MemoryStream ms = new MemoryStream();
-
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(msg));
-                Convert.ToBase64String(sha256.ComputeHash(bytes));
-
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    builder.Append(bytes[i].ToString("x2"));
-                }
-                return builder.ToString();
-            }
-        }*/
 
         private void buttonSair_Click(object sender, EventArgs e)
         {
@@ -165,6 +90,89 @@ namespace Projeto_TS_Chat
             networkStream.Close();
             client.Close();
         }
+
+        private string GerarChavePublica()
+        {
+            rsa = new RSACryptoServiceProvider();
+            //CRIAR E DEVOLVER UMA STRING QUE CONTÉM A CHAVE PÚBLICA
+            publickey = rsa.ToXmlString(false);
+            //CRIAR E DEVOLVER UMA STRING COM CHAVE PÚBLICA E PRIVADA
+            string bothkeys = rsa.ToXmlString(true);
+            return publickey;
+        }
+
+        //GERAR UMA CHAVE SIMÉTRICA A PARTIR DE UMA STRING
+        private string GerarChavePrivada(string pass)
+        {
+            byte[] salt = new byte[] { 0, 1, 0, 8, 2, 9, 9, 7 };
+            Rfc2898DeriveBytes pwdGen = new Rfc2898DeriveBytes(pass, salt, 1000);
+            //GERAR KEY
+            byte[] key = pwdGen.GetBytes(16);
+            //CONVERTER A PASS PARA BASE64
+            string passB64 = Convert.ToBase64String(key);
+            //DEVOLVER A PASS EM BYTES
+            return passB64;
+        }
+
+        //GERAR UM VETOR DE INICIALIZAÇÃO A PARTIR DE UMA STRING
+        private string GerarIv(string pass)
+        {
+            byte[] salt = new byte[] { 7, 8, 7, 8, 2, 5, 9, 5 };
+            Rfc2898DeriveBytes pwdGen = new Rfc2898DeriveBytes(pass, salt, 1000);
+            //GERAR UMA KEY
+            byte[] iv = pwdGen.GetBytes(16);
+            //CONVERTER PARA BASE64
+            string ivB64 = Convert.ToBase64String(iv);
+            //DEVOLVER EM BYTES
+            return ivB64;
+        }
+
+
+        //FUNÇÃO PARA CIFRAR O TEXTO
+        private string CifrarTexto(string txt)
+        {
+            //VARIÁVEL PARA GUARDAR O TEXTO DECIFRADO EM BYTES
+            byte[] txtDecifrado = Encoding.UTF8.GetBytes(txt);
+            //VARIÁVEL PARA GUARDAR O TEXTO CIFRADO EM BYTES
+            byte[] txtCifrado;
+            //RESERVAR ESPAÇO NA MEMÓRIA PARA COLOCAR O TEXTO E CIFRÁ-LO
+            MemoryStream ms = new MemoryStream();
+            //INICIALIZAR O SISTEMA DE CIFRAGEM (WRITE)
+            CryptoStream cs = new CryptoStream(ms, aes.CreateEncryptor(), CryptoStreamMode.Write);
+            //CRIFRAR OS DADOS
+            cs.Write(txtDecifrado, 0, txtDecifrado.Length);
+            cs.Close();
+            //GUARDAR OS DADOS CRIFRADO QUE ESTÃO NA MEMÓRIA
+            txtCifrado = ms.ToArray();
+            //CONVERTER OS BYTES PARA BASE64 (TEXTO)
+            string txtCifradoB64 = Convert.ToBase64String(txtCifrado);
+            //DEVOLVER OS BYTES CRIADOS EM BASE64
+            return txtCifradoB64;
+        }
+
+        private string DecifrarTexto(string txtCifradoB64)
+        {
+            //VARIÁVEL PARA GUARDAR O TEXTO CIFRADO EM BYTES
+            byte[] txtCifrado = Convert.FromBase64String(txtCifradoB64);
+            //RESERVAR ESPAÇO NA MEMÓRIA PARA COLOCAR O TEXTO E CIFRÁ-LO
+            MemoryStream ms = new MemoryStream(txtCifrado);
+            //INICIALIZAR O SISTEMA DE CIFRAGEM (READ)
+            CryptoStream cs = new CryptoStream(ms, aes.CreateDecryptor(), CryptoStreamMode.Read);
+
+            //VARIÁVEL PARA GUARDO O TEXTO DECIFRADO
+            byte[] txtDecifrado = new byte[ms.Length];
+            //VARIÁVEL PARA TER O NÚMERO DE BYTES DECIFRADOS
+            int bytesLidos = 0;
+            //DECIFRAR OS DADOS
+            bytesLidos = cs.Read(txtDecifrado, 0, txtDecifrado.Length);
+            cs.Close();
+            //CONVERTER PARA TEXTO
+            string textoDecifrado = Encoding.UTF8.GetString(txtDecifrado, 0, bytesLidos);
+            //DEVOLVER TEXTO DECRIFRADO
+            return textoDecifrado;
+        }
+
+
 
         private void EncryptFile(string inFile)
         {
@@ -271,6 +279,29 @@ namespace Projeto_TS_Chat
             rsa.FromXmlString(keytxt);
             rsa.PersistKeyInCsp = true;
             sr.Close();
+        }
+
+        private void FormChatBox_Load(object sender, EventArgs e)
+        {
+            //INICIALIZAR SERVIÇO DE CIFRAGEM AES
+            aes = new AesCryptoServiceProvider();
+            //GUARDAR A CHAVE GERADA
+            key = aes.Key;
+            //GUARDAR O VETOR DE INICIALIZAÇÃO GERADO
+            iv = aes.IV;
+            //IR BUSCAR CHAVE E IV
+
+            publickey = GerarChavePublica();
+            keyB64 = GerarChavePrivada(publickey);
+            ivB64 = GerarIv(publickey);
+
+
+            //CONVERTER DE BASE64 PARA BYTES E SUBSTITUIR NO AES
+            aes.Key = Convert.FromBase64String(keyB64);
+            aes.IV = Convert.FromBase64String(ivB64);
+
+            byte[] packet = protocolSI.Make(ProtocolSICmdType.PUBLIC_KEY, publickey);
+            networkStream.Write(packet, 0, packet.Length);
         }
     }
 }
