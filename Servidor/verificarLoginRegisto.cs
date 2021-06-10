@@ -64,7 +64,7 @@ namespace Servidor
             }
             catch (Exception e)
             {
-                throw new Exception("An error occurred: " + e.Message);
+                //throw new Exception("An error occurred: " + e.Message);
                 return false;
             }
         }

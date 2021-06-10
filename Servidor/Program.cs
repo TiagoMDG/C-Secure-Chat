@@ -80,7 +80,7 @@ namespace Servidor
             aes = new AesCryptoServiceProvider();
             
 
-            string username,password, stringSaltedPasswordHash, salt, chave, hash, assinatura;
+            string username,password, stringSaltedPasswordHash, salt, chave;
 
             verificarLoginRegisto loginRegisto = new verificarLoginRegisto();
 
@@ -107,13 +107,11 @@ namespace Servidor
                         byte[] msg = protocoloSI.Make(ProtocolSICmdType.SECRET_KEY, chavePrivadaCifrada);
                         networkStream.Write(msg, 0, msg.Length);
 
-                        Console.WriteLine("A chave Privada: " + Convert.ToBase64String(global.privateKey)+ " bits convertidos key: "+ global.privateKey.Length + " bits convertidos IV: " + global.privateKeyIV.Length);
                         break;
 
                     case ProtocolSICmdType.USER_OPTION_1: //Login
                         //recupera os dados enviados pelo user no pacote
                         string msgLogin = DecifrarTexto(protocoloSI.GetStringFromData());
-                        Console.WriteLine("mensagem para login: " + msgLogin);
 
                         //divide os dados em strings de Nome de utilizador e password
                         string[] SplitLogin = msgLogin.Split(new Char[] { '|' });
@@ -124,14 +122,18 @@ namespace Servidor
                         if (loginRegisto.VerifyLogin(username, password))
                         {
                             Console.WriteLine("Utilizador: " + username + " autorizado!");
+                            ack = protocoloSI.Make(ProtocolSICmdType.ACK);
+                            //envia mensagem para stream
+                            networkStream.Write(ack, 0, ack.Length);
                         }
                         else
                         {
                             Console.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");
+                            ack = protocoloSI.Make(ProtocolSICmdType.EOT);
+                            //envia mensagem para stream
+                            networkStream.Write(ack, 0, ack.Length);
+                            
                         }
-                        ack = protocoloSI.Make(ProtocolSICmdType.ACK);
-                        //envia mensagem para stream
-                        networkStream.Write(ack, 0, ack.Length);
                         break;
 
                     case ProtocolSICmdType.USER_OPTION_2: //registo
@@ -139,14 +141,11 @@ namespace Servidor
                         string msgRegister = DecifrarTexto(protocoloSI.GetStringFromData());
                         Console.WriteLine(msgRegister);
                         string[] SplitRegister = { };
-
+                        //fazer ciclo split
                         for (int i = 0; i < msgRegister.Length; i++)
                         {
                             SplitRegister = msgRegister.Split(new Char[] { '|' });
                         }
-                        
-
-                        //fazer ciclo split
 
                         username = Convert.ToString(SplitRegister[0]);
                         stringSaltedPasswordHash = Convert.ToString(SplitRegister[1]);
@@ -163,40 +162,19 @@ namespace Servidor
 
                     case ProtocolSICmdType.DATA: //mensagem normal
 
-                        string mensagemCliente = protocoloSI.GetStringFromData();
-
-
-                        Console.WriteLine("Recebi a seguinte mensagem do cliente (username e password cifrada): " + clientID + ": " + protocoloSI.GetStringFromData());
                         string msgRecebida = protocoloSI.GetStringFromData();
 
-                        //username + password
-                        Console.WriteLine("Username+Password decifrada: " + clientID + ": " + DecifrarTexto(msgRecebida));
-                        string username_password = DecifrarTexto(msgRecebida);
+                        Console.WriteLine("User: "+ clientID + " enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
+                        string msgResposta = "Mensagem recebida pelos nossos servidores, obrigado por nos escolher.";
+                        Console.WriteLine(CifrarTexto(msgResposta));
+                        Console.WriteLine(DecifrarTexto(CifrarTexto(msgResposta)));
+                        //Enviar mensagem de confirmaçao de recepçao para o cliente
+                        byte[] packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));
 
-                        //string[] words = username_password.Split('+');
+                        //enviar mensagem
+                        networkStream.Write(packet, 0, packet.Length);
 
-                        //foreach (var word in words)
-                        //{
-                        //    System.Console.WriteLine($"<{word}>");
-                        //}
-                        //String username = words[0];
-                        //String password = words[1];
-
-                        //Console.WriteLine("Username: " + username);
-                        //Console.WriteLine("Password: " + password);
-
-                        ////Registar em BD
-                        //byte[] salt = GenerateSalt(SALTSIZE);
-                        //byte[] hash = GenerateSaltedHash(password, salt);
-                        //Register(username, hash, salt);
-
-                        ack = Encoding.UTF8.GetBytes(DecifrarTexto(msgRecebida));
-                        //envia a mensagem para o stream
-                        networkStream.Write(ack, 0, ack.Length);
-                        
                         break;
-
-
 
                     case ProtocolSICmdType.EOT:
                         Console.WriteLine("Ending thread from client {0}" + clientID);

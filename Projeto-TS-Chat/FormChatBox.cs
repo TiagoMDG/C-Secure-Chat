@@ -65,7 +65,7 @@ namespace Projeto_TS_Chat
             // Preparar mensagem para ser enviada
             string msg = textBoxMessage.Text;
             textBoxMessage.Clear();
-            
+            messageChat.Items.Add("Utilizador: "+msg);
             
             //preparar a mensagem para ser enviada
             byte[] packet = protocolSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msg));
@@ -73,6 +73,10 @@ namespace Projeto_TS_Chat
             //enviar mensagem
             networkStream.Write(packet, 0, packet.Length);
             bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+
+            string msgRecebida = protocolSI.GetStringFromData();
+            messageChat.Items.Add(" enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
+            Console.WriteLine(" enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
         }
 
         private void buttonSair_Click(object sender, EventArgs e)

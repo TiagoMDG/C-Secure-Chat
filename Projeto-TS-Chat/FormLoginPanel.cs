@@ -108,16 +108,9 @@ namespace Projeto_TS_Chat
             String pass = textBoxPwLogin.Text;
             String username = textBoxUserLogin.Text;
 
-            //byte[] salt = GenerateSalt(SALTSIZE);
-            //byte[] hash = GenerateSaltedHash(pass, salt);
-
             Login(username, pass);
 
-            this.Hide();
-            FormChatBox f1 = new FormChatBox();
             
-            f1.ShowDialog();
-            this.Close();
         }
         private void buttonRegistar_Click(object sender, EventArgs e)
         {
@@ -142,9 +135,20 @@ namespace Projeto_TS_Chat
 
             // Enviar mensagem
             networkStream.Write(packet, 0, packet.Length);
-            while (protocolSI.GetCmdType() != ProtocolSICmdType.ACK)
+            //recebe confirmaçao do servidor que o login foi um sucesso!
+            networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+            if (protocolSI.GetCmdType() == ProtocolSICmdType.ACK)
             {
-                networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+                this.Hide();
+                FormChatBox f1 = new FormChatBox();
+
+                f1.ShowDialog();
+                this.Close();
+            }
+            else
+            {
+                MessageBox.Show("O seu username ou password estão incorretos ou não existem", "Erro de autenticação!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            
             }
         }
 
@@ -204,6 +208,7 @@ namespace Projeto_TS_Chat
             //DEVOLVER OS BYTES CRIADOS EM BASE64
             return txtCifradoB64;
         }
+
         private string GerarChavePrivada(string pass)
         {
             byte[] salt = new byte[] { 0, 1, 0, 8, 2, 9, 9, 7 };
