@@ -30,10 +30,14 @@ namespace Projeto_TS_Chat
         const string PubKeyFile = @"c:\z_TS\encrypt\rsaPublicKey.txt";
         const string keyName = "Key01";
 
-        byte[] chavePrivadaDecifrada;
-
         string publickey, keyB64, ivB64;
         int bytesRead = 0;
+
+        private const int SALTSIZE = 8;
+        private const int NUMBER_OF_ITERATIONS = 1000;
+
+        string publicKey;
+        string chavePrivadaDecifrada;
 
         private byte[] key;
         private byte[] iv;
@@ -57,7 +61,48 @@ namespace Projeto_TS_Chat
             // Preparação da comunicação utilizando a classe desenvolvida pelo DEI
             protocolSI = new ProtocolSI();
 
+            ////inicializar o serviço AES
+            aes = new AesCryptoServiceProvider();
+            ////guardar a chave gerada
+            key = aes.Key;
+            ////guardar o vetor de inicialização IV
+            iv = aes.IV;
 
+            enviarReceberChaves();
+        }
+
+        private void enviarReceberChaves()
+        {
+            publicKey = GerarChavePublica();
+
+            byte[] packet = protocolSI.Make(ProtocolSICmdType.PUBLIC_KEY, publicKey);
+            networkStream.Write(packet, 0, packet.Length);
+
+            //receber chave privada
+            networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+
+            string chavePrivadaCifrada;
+            chavePrivadaCifrada = protocolSI.GetStringFromData();
+
+            //INICIALIZAR SERVIÇO DE CIFRAGEM AES
+            aes = new AesCryptoServiceProvider();
+            //GUARDAR A CHAVE GERADA
+            key = aes.Key;
+            //GUARDAR O VETOR DE INICIALIZAÇÃO GERADO
+            iv = aes.IV;
+            //IR BUSCAR CHAVE E IV 
+            string keyB64 = GerarChavePrivada(publicKey);
+            string ivB64 = GerarIv(publicKey);
+
+            //CONVERTER DE BASE64 PARA BYTES E SUBSTITUIR NO AES
+            aes.Key = Convert.FromBase64String(keyB64);
+            aes.IV = Convert.FromBase64String(ivB64);
+            //IR BUSCAR O TEXTO DA TEXTBOX TEXTOCIFRADO (BASE64)
+            //string textoCifrado = tb_TextoCifrado.Text;
+            //CHAMAR A FUNÇÃO DECIFRARTEXTO E ENVIAR TEXTO GUARDADO ANTES E GUARDÁ-LO NA VARÍAVEL TEXTODECIFRADO
+            chavePrivadaDecifrada = DecifrarTexto(chavePrivadaCifrada);
+
+            Console.WriteLine(chavePrivadaDecifrada);
         }
 
         private void buttonEnviar_Click(object sender, EventArgs e)
@@ -131,7 +176,6 @@ namespace Projeto_TS_Chat
             return ivB64;
         }
 
-
         //FUNÇÃO PARA CIFRAR O TEXTO
         private string CifrarTexto(string txt)
         {
@@ -152,7 +196,7 @@ namespace Projeto_TS_Chat
             string txtCifradoB64 = Convert.ToBase64String(txtCifrado);
             //DEVOLVER OS BYTES CRIADOS EM BASE64
             return txtCifradoB64;
-        }
+        }   // Verificado
 
         private string DecifrarTexto(string txtCifradoB64)
         {
@@ -174,9 +218,7 @@ namespace Projeto_TS_Chat
             string textoDecifrado = Encoding.UTF8.GetString(txtDecifrado, 0, bytesLidos);
             //DEVOLVER TEXTO DECRIFRADO
             return textoDecifrado;
-        }
-
-
+        }  // Verificado
 
         private void EncryptFile(string inFile)
         {
@@ -274,6 +316,85 @@ namespace Projeto_TS_Chat
             }
         }
 
+        private void buttonRegistar_Click(object sender, EventArgs e)
+        {
+            String pass = textBoxPwRegistar.Text;
+            String username = textBoxUserRegistar.Text;
+            byte[] salt = GenerateSalt(SALTSIZE);
+            byte[] hash = GenerateSaltedHash(pass, salt);
+
+            Register(username, hash, salt, publicKey);
+        }
+
+        private void buttonLogin_Click(object sender, EventArgs e)
+        {
+            String pass = textBoxPwLogin.Text;
+            String username = textBoxUserLogin.Text;
+
+            Login(username, pass);
+        }
+
+        private void Login(string user, string password)
+        {
+            //Login opçao SI USER_OPTION_1
+
+            //mensagem a enviar
+            string msg = user + '|' + password;
+
+            //pacote a enviar pelo protocolo SI
+            byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_1, CifrarTexto(msg));
+
+            // Enviar mensagem
+            networkStream.Write(packet, 0, packet.Length);
+            //recebe confirmaçao do servidor que o login foi um sucesso!
+            networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+            if (protocolSI.GetCmdType() == ProtocolSICmdType.ACK)
+            {
+
+            }
+            else
+            {
+                MessageBox.Show("O seu username ou password estão incorretos ou não existem", "Erro de autenticação!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+            }
+        }
+
+        private void Register(string user, byte[] passHash, byte[] passSalt, string publicKey)
+        {
+            //registar opçao SI USER_OPTION_2
+            //converter encriptaçao para string para ser enviado
+            string passwordHash = Convert.ToBase64String(passHash);
+            string passwordSalt = Convert.ToBase64String(passSalt);
+
+            //mensagem a enviar
+            string msg = user + '|' + passwordHash + '|' + passwordSalt + '|' + publicKey;
+
+            //pacote a enviar pelo protocolo SI
+            byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_2, CifrarTexto(msg));
+
+            // Enviar mensagem
+            networkStream.Write(packet, 0, packet.Length);
+            while (protocolSI.GetCmdType() != ProtocolSICmdType.ACK)
+            {
+                networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+            }
+        }
+
+        private static byte[] GenerateSalt(int size)
+        {
+            //Generate a cryptographic random number.
+            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+            byte[] buff = new byte[size];
+            rng.GetBytes(buff);
+            return buff;
+        }
+
+        private static byte[] GenerateSaltedHash(string plainText, byte[] salt)
+        {
+            Rfc2898DeriveBytes rfc2898 = new Rfc2898DeriveBytes(plainText, salt, NUMBER_OF_ITERATIONS);
+            return rfc2898.GetBytes(32);
+        }
+
         private void rsakey()
         {
             StreamReader sr = new StreamReader(PubKeyFile);
@@ -283,29 +404,6 @@ namespace Projeto_TS_Chat
             rsa.FromXmlString(keytxt);
             rsa.PersistKeyInCsp = true;
             sr.Close();
-        }
-
-        private void FormChatBox_Load(object sender, EventArgs e)
-        {
-            //INICIALIZAR SERVIÇO DE CIFRAGEM AES
-            aes = new AesCryptoServiceProvider();
-            //GUARDAR A CHAVE GERADA
-            key = aes.Key;
-            //GUARDAR O VETOR DE INICIALIZAÇÃO GERADO
-            iv = aes.IV;
-            //IR BUSCAR CHAVE E IV
-
-            publickey = GerarChavePublica();
-            keyB64 = GerarChavePrivada(publickey);
-            ivB64 = GerarIv(publickey);
-
-
-            //CONVERTER DE BASE64 PARA BYTES E SUBSTITUIR NO AES
-            aes.Key = Convert.FromBase64String(keyB64);
-            aes.IV = Convert.FromBase64String(ivB64);
-
-            byte[] packet = protocolSI.Make(ProtocolSICmdType.PUBLIC_KEY, publickey);
-            networkStream.Write(packet, 0, packet.Length);
         }
     }
 }
