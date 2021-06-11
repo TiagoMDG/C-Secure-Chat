@@ -26,8 +26,9 @@ namespace Projeto_TS_Chat
         private RSACryptoServiceProvider rsa;
 
         const string EncrFolder = @"c:\z_TS\Encrypt\";
-        const string SrcFolder = @"c:\z_TS\Encrypt\";
-        const string PubKeyFile = @"c:\z_TS\encrypt\rsaPublicKey.txt";
+        const string DecrFolder = @"c:\z_TS\Decrypt\";
+        const string SrcFolder = @"c:\z_TS\docs\";
+        const string PubKeyFile = "rsaPublicKey.txt";
         const string keyName = "Key01";
 
         string publickey;
@@ -224,7 +225,7 @@ namespace Projeto_TS_Chat
             return textoDecifrado;
         }  
 
-        private void EncryptFile(string inFile)
+        private void EncryptFile(string inFile, byte[] key)
         {
 
             // Create instance of Aes for
@@ -236,7 +237,7 @@ namespace Projeto_TS_Chat
             // encrypt the AES key.
             // rsa is previously instantiated:
             //    rsa = new RSACryptoServiceProvider(cspp);
-            byte[] keyEncrypted = rsa.Encrypt(aes.Key, false);
+            byte[] keyEncrypted = rsa.Encrypt(key, false);
 
             // Create byte arrays to contain
             // the length values of the key and IV.
@@ -258,7 +259,7 @@ namespace Projeto_TS_Chat
 
             int startFileName = inFile.LastIndexOf("\\") + 1;
             // Change the file's extension to ".enc"
-            string outFile = EncrFolder + inFile.Substring(startFileName, inFile.LastIndexOf(".") - startFileName) + ".enc";
+            string outFile = inFile.Substring(startFileName, inFile.LastIndexOf(".") - startFileName) + ".enc";
 
             using (FileStream outFs = new FileStream(outFile, FileMode.Create))
             {
@@ -305,19 +306,27 @@ namespace Projeto_TS_Chat
 
         private void buttonUpFile_Click(object sender, EventArgs e)
         {
-            rsakey();
             openFileDialog1.InitialDirectory = SrcFolder;
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 string fName = openFileDialog1.FileName;
-                if (fName != null)
-                {
-                    FileInfo fInfo = new FileInfo(fName);
-                    // Pass the file name without the path.
-                    string name = fInfo.FullName;
-                    EncryptFile(name);
-                }
-            }
+                EncryptFile(fName, key);
+
+                MemoryStream destination = new MemoryStream();
+
+                FileStream fs = new FileStream("w.enc", FileMode.Open);
+                fs.CopyTo(destination);
+
+                //preparar a mensagem para ser enviada
+                byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_3, destination.ToArray());
+
+                //enviar mensagem
+                networkStream.Write(packet, 0, packet.Length);
+                bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+
+                string msgRecebida = protocolSI.GetStringFromData();
+                messageChat.Items.Add("Server: " + DecifrarTexto(msgRecebida));
+            } 
         }
 
         private void buttonRegistar_Click(object sender, EventArgs e)
