@@ -58,7 +58,7 @@ namespace Servidor
                 byte[] saltStored = (byte[])reader["Salt"];
 
                 conn.Close();
-                atualizaChavePublica(username, publicKey);
+                updatePublicKey(username, publicKey);
                 //Verificar se a password na base de dados 
                 byte[] hash = GenerateSaltedHash(password, saltStored);
                 return saltedPasswordHashStored.SequenceEqual(hash);
@@ -71,7 +71,7 @@ namespace Servidor
             }
         }
 
-        private void atualizaChavePublica(string username, string publicKey)
+        private void updatePublicKey(string username, string publicKey)
         {
             SqlConnection conn = null;
             try
@@ -122,7 +122,8 @@ namespace Servidor
         }
 
         public void Register(string username, byte[] saltedPasswordHash, byte[] salt, string publicKey)
-        {       
+        {   
+
             SqlConnection conn = null;
             try
             {
@@ -166,6 +167,47 @@ namespace Servidor
             {
                 throw new Exception("Error while inserting an user:" + e.Message);
             }
+        }
+
+        public bool UserCheckUp(string username)
+        {          
+
+            SqlConnection conn = null;
+            try
+            {
+                // Configurar ligação à Base de Dados
+                conn = new SqlConnection();
+                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\Pedro Lourenço\Documents\Aulas\PSI_TS_PL1\Servidor\Users.mdf';Integrated Security=True");
+
+                // Abrir ligação à Base de Dados
+                conn.Open();
+
+                // Declaração dos parâmetros do comando SQL
+                SqlParameter paramUsername = new SqlParameter("@username", username);
+
+                // Declaração do comando SQL
+                String sql = "SELECT * FROM Users WHERE Username = @username";
+
+                // Prepara comando SQL para ser executado na Base de Dados
+                SqlCommand cmd = new SqlCommand(sql, conn);
+
+                // Introduzir valores aos parâmentros registados no comando SQL
+                cmd.Parameters.Add(paramUsername);
+
+                // Executar comando SQL
+                int lines = cmd.ExecuteNonQuery();
+
+                // Fechar ligação
+                conn.Close();
+                return true;
+
+            }
+            catch 
+            {
+                return false;
+
+            }
+
         }
     }
 }

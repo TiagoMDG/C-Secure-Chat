@@ -159,7 +159,15 @@ namespace Servidor
                         salt = Convert.ToString(SplitRegister[2]);
                         chave = Convert.ToString(SplitRegister[3]);
 
-                        loginRegisto.Register(username, Convert.FromBase64String(stringSaltedPasswordHash), Convert.FromBase64String(salt), global.chavepublica);
+                        //verifica se ja existe utilizador registado com o mesmo nome
+                        if (!loginRegisto.UserCheckUp(username))
+                        {
+                            loginRegisto.Register(username, Convert.FromBase64String(stringSaltedPasswordHash), Convert.FromBase64String(salt), global.chavepublica);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Ja existe um utilizador com esse nome");
+                        }
 
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
                         //envia mensagem para stream

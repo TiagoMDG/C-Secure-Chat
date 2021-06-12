@@ -389,6 +389,7 @@ namespace Projeto_TS_Chat
         private void Register(string user, byte[] passHash, byte[] passSalt, string publicKey)
         {
             //registar opçao SI USER_OPTION_2
+
             //converter encriptaçao para string para ser enviado
             string passwordHash = Convert.ToBase64String(passHash);
             string passwordSalt = Convert.ToBase64String(passSalt);
