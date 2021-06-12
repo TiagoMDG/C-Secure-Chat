@@ -57,8 +57,8 @@ namespace Servidor
 
         AesCryptoServiceProvider aes;
 
-        string username, stringSaltedPasswordHash, salt, chave, hash, assinatura;
-
+        string username, password, stringSaltedPasswordHash, salt, chave, nomeFicheiro;
+        
         public ClienteHandler(TcpClient client, int clientID)
         {
             this.client = client;
@@ -81,7 +81,7 @@ namespace Servidor
             StreamWriter sw = new StreamWriter("ConsoleLog.txt");
 
 
-            string password, stringSaltedPasswordHash, salt, chave;
+            
 
             verificarLoginRegisto loginRegisto = new verificarLoginRegisto();
 
@@ -182,13 +182,30 @@ namespace Servidor
                         networkStream.Write(packet, 0, packet.Length);
                         break;
 
+                    case ProtocolSICmdType.USER_OPTION_4://recebe nome do ficheiro
+
+                        nomeFicheiro = protocoloSI.GetStringFromData();
+                        //nomeFicheiro = DecifrarTexto(nomeFicheiroRecebido);
+                        Console.WriteLine(username + "(" + clientID + ")" + " enviou a seguinte mensagem: " + DecifrarTexto(nomeFicheiro));
+                        msgResposta = "Mensagem recebida pelos nossos servidores, obrigado por nos escolher.";
+
+                        sw.WriteLine(username + ": " + DecifrarTexto(nomeFicheiro));
+                        sw.WriteLine("Server: " + msgResposta);
+
+                        //Enviar mensagem de confirmaçao de recepçao para o cliente
+                        packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));
+
+                        networkStream.Write(packet, 0, packet.Length);
+                        break;
+
                     case ProtocolSICmdType.USER_OPTION_3: //mensagem normal
 
                         byte[] fileReceived = protocoloSI.GetData();
+                        //File.WriteAllBytes("teste", fileReceived);
 
-                        File.WriteAllBytes("test", fileReceived);
+                        File.WriteAllBytes(DecifrarTexto(nomeFicheiro), fileReceived);
 
-                        //DecryptFile("test", aes.Key, aes.IV);
+                        DecryptFile(DecifrarTexto(nomeFicheiro), aes.Key, aes.IV);
 
                         Console.WriteLine(username + "(" + clientID + ")" + " enviou um ficheiro");
                         string msgFicheiro = "Ficheiro recebido pelos nossos servidores, obrigado por nos escolher.";
@@ -288,6 +305,7 @@ namespace Servidor
             //DEVOLVER TEXTO DECRIFRADO
             return textoDecifrado;
         }
+        //string outFile = inFile.Substring(0, inFile.LastIndexOf(".")) + "";
 
         private void DecryptFile(string inFile, byte[] privatekey, byte[] iv)
         {
@@ -303,10 +321,9 @@ namespace Servidor
             byte[] LenK = new byte[4];
             byte[] LenIV = new byte[4];
 
-            int lenght = inFile.Length;
-
             // Construct the file name for the decrypted file.
-            string outFile = "test.txt";
+
+            string outFile = inFile.Substring(0, inFile.LastIndexOf(".")) + "";
 
             // Use FileStream objects to read the encrypted
             // file (inFs) and save the decrypted file (outFs).
@@ -388,5 +405,6 @@ namespace Servidor
                 inFs.Close();
             }
         }
+    
     }
 }

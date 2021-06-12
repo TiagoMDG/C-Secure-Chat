@@ -223,9 +223,9 @@ namespace Projeto_TS_Chat
             string textoDecifrado = Encoding.UTF8.GetString(txtDecifrado, 0, bytesLidos);
             //DEVOLVER TEXTO DECRIFRADO
             return textoDecifrado;
-        }  
+        }
 
-        private void EncryptFile(string inFile, byte[] key)
+        private void EncryptFile(string inFile)
         {
 
             // Create instance of Aes for
@@ -237,7 +237,7 @@ namespace Projeto_TS_Chat
             // encrypt the AES key.
             // rsa is previously instantiated:
             //    rsa = new RSACryptoServiceProvider(cspp);
-            byte[] keyEncrypted = rsa.Encrypt(key, false);
+            byte[] keyEncrypted = rsa.Encrypt(aes.Key, false);
 
             // Create byte arrays to contain
             // the length values of the key and IV.
@@ -259,7 +259,7 @@ namespace Projeto_TS_Chat
 
             int startFileName = inFile.LastIndexOf("\\") + 1;
             // Change the file's extension to ".enc"
-            string outFile = inFile.Substring(startFileName, inFile.LastIndexOf(".") - startFileName) + ".enc";
+            string outFile = EncrFolder + inFile.Substring(startFileName, inFile.LastIndexOf("") + 1 - startFileName) + ".enc";
 
             using (FileStream outFs = new FileStream(outFile, FileMode.Create))
             {
@@ -303,6 +303,7 @@ namespace Projeto_TS_Chat
                 outFs.Close();
             }
         }
+    
 
         private void buttonUpFile_Click(object sender, EventArgs e)
         {
@@ -310,15 +311,25 @@ namespace Projeto_TS_Chat
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 string fName = openFileDialog1.FileName;
-                EncryptFile(fName, key);
+                EncryptFile(fName);
+
+                int outFile = fName.LastIndexOf("\\") + 1;
+                string nomeFicheiro = fName.Substring(outFile, fName.LastIndexOf("") + 1 - outFile);
+                nomeFicheiro = nomeFicheiro + ".enc";
+                //envia o nome do ficheiro para o servidor
+                byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_4, CifrarTexto(nomeFicheiro));
+
+                //enviar mensagem
+                networkStream.Write(packet, 0, packet.Length);
+                bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
 
                 MemoryStream destination = new MemoryStream();
-
-                FileStream fs = new FileStream("w.enc", FileMode.Open);
+                string path = "C:\\z_TS\\Encrypt\\"+ nomeFicheiro;
+                FileStream fs = new FileStream(path, FileMode.Open);
                 fs.CopyTo(destination);
 
                 //preparar a mensagem para ser enviada
-                byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_3, destination.ToArray());
+                packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_3, destination.ToArray());
 
                 //enviar mensagem
                 networkStream.Write(packet, 0, packet.Length);
@@ -426,17 +437,6 @@ namespace Projeto_TS_Chat
             messageChat.Enabled = true;
             buttonEnviar.Enabled = true;
             buttonUpFile.Enabled = true;
-        }
-
-        private void rsakey()
-        {
-            StreamReader sr = new StreamReader(PubKeyFile);
-            cspp.KeyContainerName = keyName;
-            rsa = new RSACryptoServiceProvider(cspp);
-            string keytxt = sr.ReadToEnd();
-            rsa.FromXmlString(keytxt);
-            rsa.PersistKeyInCsp = true;
-            sr.Close();
         }
     }
 }
