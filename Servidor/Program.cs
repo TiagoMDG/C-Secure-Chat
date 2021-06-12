@@ -123,7 +123,7 @@ namespace Servidor
                         username = Convert.ToString(SplitLogin[0]);
                         password = Convert.ToString(SplitLogin[1]);
 
-                        if (loginRegisto.VerifyLogin(username, password))
+                        if (loginRegisto.VerifyLogin(username, password, global.chavepublica))
                         {
                             Console.WriteLine("Utilizador " + username + " autorizado!");
                             sw.WriteLine("\nUtilizador " + username + " autorizado!");
@@ -159,7 +159,7 @@ namespace Servidor
                         salt = Convert.ToString(SplitRegister[2]);
                         chave = Convert.ToString(SplitRegister[3]);
 
-                        loginRegisto.Register(username, Convert.FromBase64String(stringSaltedPasswordHash), Convert.FromBase64String(salt));
+                        loginRegisto.Register(username, Convert.FromBase64String(stringSaltedPasswordHash), Convert.FromBase64String(salt), global.chavepublica);
 
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
                         //envia mensagem para stream
