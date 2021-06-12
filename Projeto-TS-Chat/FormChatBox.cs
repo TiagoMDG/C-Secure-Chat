@@ -259,7 +259,7 @@ namespace Projeto_TS_Chat
 
             int startFileName = inFile.LastIndexOf("\\") + 1;
             // Change the file's extension to ".enc"
-            string outFile = EncrFolder + inFile.Substring(startFileName, inFile.LastIndexOf("") + 1 - startFileName) + ".enc";
+            string outFile = inFile.Substring(startFileName, inFile.LastIndexOf("") + 1 - startFileName) + ".enc";
 
             using (FileStream outFs = new FileStream(outFile, FileMode.Create))
             {
@@ -303,7 +303,7 @@ namespace Projeto_TS_Chat
                 outFs.Close();
             }
         }
-    
+
 
         private void buttonUpFile_Click(object sender, EventArgs e)
         {
@@ -324,8 +324,7 @@ namespace Projeto_TS_Chat
                 bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
 
                 MemoryStream destination = new MemoryStream();
-                string path = "C:\\z_TS\\Encrypt\\"+ nomeFicheiro;
-                FileStream fs = new FileStream(path, FileMode.Open);
+                FileStream fs = new FileStream(nomeFicheiro, FileMode.Open);
                 fs.CopyTo(destination);
 
                 //preparar a mensagem para ser enviada
