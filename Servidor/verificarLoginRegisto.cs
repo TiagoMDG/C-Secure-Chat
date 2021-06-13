@@ -6,11 +6,15 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
+// Esta classe contem todas as funções que interagem com a base de dados
+
 namespace Servidor
 {
     class verificarLoginRegisto
     {
         private const int NUMBER_OF_ITERATIONS = 1000;
+
+        // esta função faz a verificação das credencias do utilizador e palavra passe 
 
         public bool VerifyLogin(string username, string password, string publicKey)
         {
@@ -71,6 +75,7 @@ namespace Servidor
             }
         }
 
+        // atualiza a chave publica armazenada na base de dados apois login do utilizador confirmado 
         private void updatePublicKey(string username, string publicKey)
         {
             SqlConnection conn = null;
@@ -115,12 +120,16 @@ namespace Servidor
         
         }
 
+        // cria o salt para armazendar a palavra passe na base de dados
         private static byte[] GenerateSaltedHash(string plainText, byte[] salt)
         {
             Rfc2898DeriveBytes rfc2898 = new Rfc2898DeriveBytes(plainText, salt, NUMBER_OF_ITERATIONS);
             return rfc2898.GetBytes(32);
         }
 
+
+        // faz o registo do utilizador na base de dados para que este consiga efetuar o login,
+        // funçao armazena nome do utilizador, palavra passe, salt usado e chave publica
         public void Register(string username, byte[] saltedPasswordHash, byte[] salt, string publicKey)
         {   
 
@@ -169,6 +178,7 @@ namespace Servidor
             }
         }
 
+        //verifica a existencia de um nome de utizador repetido e devolve "true" ou "false" caso encontre ou não
         public bool UserCheckUp(string username)
         {          
 

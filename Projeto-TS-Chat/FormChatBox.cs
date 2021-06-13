@@ -129,6 +129,7 @@ namespace Projeto_TS_Chat
 
         private void buttonSair_Click(object sender, EventArgs e)
         {
+            //armazena todas as mensagens trocadas entre cliente e servidor do lado do cliente
             System.IO.File.WriteAllLines("log.txt", messageChat.Items.Cast<string>().ToArray());
 
             CloseClient();
