@@ -42,23 +42,24 @@ namespace Servidor
             }
         }
     }
-    public class Globals
+    public class Globals //armazena variaveis glibais para serem usadas nas varias funções do servidor
     {
         public Byte[] privateKey;
         public Byte[] privateKeyIV;
         public string chavepublica;
         public string username;
     }
-    class ClienteHandler
+
+    class ClienteHandler //classe que trata de todas as operações de interação com o cliente
     {
         private TcpClient client;
         private int clientID;
-        //construtor da classe
+        
 
         AesCryptoServiceProvider aes;
         RSACryptoServiceProvider rsa;
 
-        string username, password, stringSaltedPasswordHash, salt, chave, nomeFicheiro;
+        string username, password, stringSaltedPasswordHash, salt, chave, nomeFicheiro; //variaveis que iram ser usadas nas várias cominicações
         
         public ClienteHandler(TcpClient client, int clientID)
         {
@@ -79,12 +80,10 @@ namespace Servidor
             ProtocolSI protocoloSI = new ProtocolSI();
             Globals global = new Globals();
             aes = new AesCryptoServiceProvider();
-            StreamWriter sw = new StreamWriter("ConsoleLog.txt");
 
+            StreamWriter sw = new StreamWriter("ConsoleLog.txt");//inicia o processo de escrita para o ficheiro ConsoleLog.txt
 
-            
-
-            verificarLoginRegisto loginRegisto = new verificarLoginRegisto();
+            verificarLoginRegisto loginRegisto = new verificarLoginRegisto(); //inicialização da classe que contem as funçoes de login e registo
 
             //enquanto a tread nao receber ordem de termino
             while (protocoloSI.GetCmdType() != ProtocolSICmdType.EOT)
@@ -92,142 +91,141 @@ namespace Servidor
                 int bytesRead = networkStream.Read(protocoloSI.Buffer, 0, protocoloSI.Buffer.Length);
                 byte[] ack;
 
+                //faz a diferenciação entre os varios tipos de pacotes enviados atraves do protocolo SI do cliente para o servidor
                 switch (protocoloSI.GetCmdType())
                 {
-                    case ProtocolSICmdType.PUBLIC_KEY:
+                    case ProtocolSICmdType.PUBLIC_KEY: //recebe e trata a chave publica do cliente
 
                         string chavePublica = protocoloSI.GetStringFromData();
                         global.chavepublica = chavePublica;
-                        string chavePrivada = GerarChavePrivada(chavePublica);
-                        global.privateKey = Convert.FromBase64String(chavePrivada);
 
-                        global.privateKeyIV = Convert.FromBase64String(GerarIv(chavePublica));
-                        aes.Key = global.privateKey;
-                        aes.IV = global.privateKeyIV;
+                        string chavePrivada = GerarChavePrivada(chavePublica);// gera a chave privada com base na chave publica enviada pelo cliente
+                        global.privateKey = Convert.FromBase64String(chavePrivada);//converte a chave privada para uma variável tipo byte
+
+                        global.privateKeyIV = Convert.FromBase64String(GerarIv(chavePublica));//gera o vetor de inicialização a ser usado nos processos de decifragem
+                        
+                        aes.Key = global.privateKey;//atribui, ao aes, a chave privada 
+                        aes.IV = global.privateKeyIV;//atribui, ao aes, o vetor de inicialização
+
+                        //envia a chave privada encriptada para o cliente
                         string chavePrivadaCifrada = CifrarTexto(chavePrivada);
                         byte[] msg = protocoloSI.Make(ProtocolSICmdType.SECRET_KEY, chavePrivadaCifrada);
                         networkStream.Write(msg, 0, msg.Length);
 
+                        //escreve para o ficheiro ConsoleLog.txt as chaves 
                         sw.WriteLine("Chave Publica: " + chavePublica);
                         sw.WriteLine("Chave Privada: " + chavePrivada);
 
                         break;
 
                     case ProtocolSICmdType.USER_OPTION_1: //Login
+
                         //recupera os dados enviados pelo user no pacote
                         string msgLogin = DecifrarTexto(protocoloSI.GetStringFromData());
 
-                        //divide os dados em strings de Nome de utilizador e password
+                        //divide os dados em strings, usando um caracter pré-definido, Nome de utilizador e password
                         string[] SplitLogin = msgLogin.Split(new Char[] { '|' });
 
                         username = Convert.ToString(SplitLogin[0]);
                         password = Convert.ToString(SplitLogin[1]);
 
+                        //chama a funçao de verificação de login,
+                        //se bem sucedido deixa o utilizador entrar no sistema se não termina a comunicação
                         if (loginRegisto.VerifyLogin(username, password, global.chavepublica))
                         {
                             Console.WriteLine("Utilizador " + username + " autorizado!");
-                            sw.WriteLine("\nUtilizador " + username + " autorizado!");
+                            sw.WriteLine("\nUtilizador " + username + " autorizado!");//escreve para log o resultado da tentativa de login
 
-                            ack = protocoloSI.Make(ProtocolSICmdType.ACK);
-                            //envia mensagem para stream
+                            //envia mensagem para o cliente a acusar login bem sucedido
+                            ack = protocoloSI.Make(ProtocolSICmdType.ACK);                            
                             networkStream.Write(ack, 0, ack.Length);
                         }
                         else
                         {
                             Console.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");
-                            sw.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");
+                            sw.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");//escreve para log o resultado da tentativa de login
 
+                            //envia mensagem para o cliente a terminar a ligação
                             ack = protocoloSI.Make(ProtocolSICmdType.EOT);
-                            //envia mensagem para stream
                             networkStream.Write(ack, 0, ack.Length);
                         }
                         break;
 
-                    case ProtocolSICmdType.USER_OPTION_2: //registo
-                        
+                    case ProtocolSICmdType.USER_OPTION_2: //Registo
+
+                        //recupera e decifra a nensagem enviada pelo cliente com as credenciais para registo
                         string msgRegister = DecifrarTexto(protocoloSI.GetStringFromData());
-                        Console.WriteLine(msgRegister);
-                        string[] SplitRegister = { };
-                        //fazer ciclo split
+
+                        //divide os dados em strings, usando um caracter pré-definido,
+                        //Nome de utilizador, password, salt e chave publica
+                        string[] SplitRegister = { };                        
                         for (int i = 0; i < msgRegister.Length; i++)
                         {
                             SplitRegister = msgRegister.Split(new Char[] { '|' });
                         }
-
                         username = Convert.ToString(SplitRegister[0]);
                         stringSaltedPasswordHash = Convert.ToString(SplitRegister[1]);
                         salt = Convert.ToString(SplitRegister[2]);
                         chave = Convert.ToString(SplitRegister[3]);
 
-                        //verifica se ja existe utilizador registado com o mesmo nome
-                        if (!loginRegisto.UserCheckUp(username))
-                        {
-                            loginRegisto.Register(username, Convert.FromBase64String(stringSaltedPasswordHash), Convert.FromBase64String(salt), global.chavepublica);
-                        }
-                        else
-                        {
-                            Console.WriteLine("Ja existe um utilizador com esse nome");
-                        }
+                        //chama a função de registo de utilizadores na base de dados
+                        loginRegisto.Register(username, Convert.FromBase64String(stringSaltedPasswordHash), Convert.FromBase64String(salt), global.chavepublica);
 
+                        //envia mensagem para o cliente em como o registo foi bem sucedido
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
-                        //envia mensagem para stream
                         networkStream.Write(ack, 0, ack.Length);
                         
                         break;
 
-                    case ProtocolSICmdType.DATA: //mensagem normal
+                    case ProtocolSICmdType.DATA: //mensagem de texto
 
-                        string msgRecebida = protocoloSI.GetStringFromData();
+                        //recupera e decifra a nensagem de texto enviada pelo cliente
+                        string msgRecebida = DecifrarTexto(protocoloSI.GetStringFromData());
 
-                        Console.WriteLine(username +"("+ clientID +")" + " enviou a seguinte mensagem: " + DecifrarTexto(msgRecebida));
+                        Console.WriteLine(username +"("+ clientID +")" + " enviou a seguinte mensagem: " + msgRecebida);
+                        //Mensagem a enviar para o cliente apos recepção de mensagem de texto
                         string msgResposta = "Mensagem recebida pelos nossos servidores, obrigado por nos escolher.";
 
-                        sw.WriteLine(username + ": " + DecifrarTexto(msgRecebida));
+                        sw.WriteLine(username + ": " + msgRecebida);
                         sw.WriteLine("Server: " + msgResposta);
 
-                        //Enviar mensagem de confirmaçao de recepçao para o cliente
-                        byte[] packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));
-                        
+                        //Envia mensagem de confirmaçao de recepçao, cifrada, para o cliente
+                        byte[] packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));                        
                         networkStream.Write(packet, 0, packet.Length);
                         break;
 
                     case ProtocolSICmdType.USER_OPTION_4://recebe nome do ficheiro
 
+                        //recebe o nome do ficheiro
                         nomeFicheiro = protocoloSI.GetStringFromData();
-                        //nomeFicheiro = DecifrarTexto(nomeFicheiroRecebido);
+                        //esccreve na consola do servidor o nome do ficheiro e a informção de quem o enviou
                         Console.WriteLine(username + "(" + clientID + ")" + " enviou a seguinte mensagem: " + DecifrarTexto(nomeFicheiro));
-                        msgResposta = "Mensagem recebida pelos nossos servidores, obrigado por nos escolher.";
+                        
+                        //Enviar mensagem de confirmaçao de recepçao do nome do fichiero para o cliente
+                        ack = protocoloSI.Make(ProtocolSICmdType.ACK);
+                        networkStream.Write(ack, 0, ack.Length);
+                        break;
 
+                    case ProtocolSICmdType.USER_OPTION_3: //recebe o ficheiro
+
+                        //recupera o ficheiro enviado pelo cliente 
+                        byte[] fileReceived = protocoloSI.GetData();
+
+                        //escreve na pasta do servidor o ficheiro com o nome enviado pelo cliente e recebido na USER_OPTION_4
+                        File.WriteAllBytes(DecifrarTexto(nomeFicheiro), fileReceived);
+                        //Mensagem a enviar para o cliente apos recepção de ficheiros
+                        msgResposta = "Ficheiro recebido pelos nossos servidores, obrigado por nos escolher.";
+
+                        //escreve no ficheiro de log o nome de ficheiro enviado pelo cliente e a resposta que o servidor enviou
                         sw.WriteLine(username + ": " + DecifrarTexto(nomeFicheiro));
                         sw.WriteLine("Server: " + msgResposta);
 
                         //Enviar mensagem de confirmaçao de recepçao para o cliente
                         packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));
-
                         networkStream.Write(packet, 0, packet.Length);
                         break;
-
-                    case ProtocolSICmdType.USER_OPTION_3: //mensagem normal
-
-                        byte[] fileReceived = protocoloSI.GetData();
-                        //File.WriteAllBytes("teste", fileReceived);
-
-                        File.WriteAllBytes(DecifrarTexto(nomeFicheiro), fileReceived);
-                        Console.WriteLine(fileReceived.Length);
-                        DecryptFile(DecifrarTexto(nomeFicheiro), aes.Key, aes.IV);
-
-                        Console.WriteLine(username + "(" + clientID + ")" + " enviou um ficheiro");
-                        string msgFicheiro = "Ficheiro recebido pelos nossos servidores, obrigado por nos escolher.";
-
-                        sw.WriteLine(username + "(" + clientID + ")" + " enviou um ficheiro");
-
-                        //Enviar mensagem de confirmaçao de recepçao para o cliente
-                        byte[] packetfile = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgFicheiro));
-
-                        networkStream.Write(packetfile, 0, packetfile.Length);
-                        break;
                         
-                    case ProtocolSICmdType.EOT:
+                    case ProtocolSICmdType.EOT:// recebe este protcolo quando o clinte encerra comunicações
                         Console.WriteLine("Ending thread from client {0}({1})", username,clientID);
                         sw.WriteLine("Ending thread from client {0}({1})", username, clientID);
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
@@ -235,12 +233,11 @@ namespace Servidor
                         networkStream.Write(ack, 0, ack.Length);
                         break;
                 }
-            }            
+            }
+            //fecha todas as comunicaçoes com o cliente e encerra o processo de escrita para o ficheiro de log do servidor
             networkStream.Close();
             client.Close();
             sw.Close();
-
-            //Environment.Exit(0);
         }
 
 
@@ -272,6 +269,7 @@ namespace Servidor
             return ivB64;
         }
 
+        //funçao responsavel por cifrar mensagens enviadas para o cliente
         private string CifrarTexto(string txt)
         {
             //VARIÁVEL PARA GUARDAR O TEXTO DECIFRADO EM BYTES
@@ -293,6 +291,7 @@ namespace Servidor
             return txtCifradoB64;
         }
 
+        //funçao responsavel por decifrar mensagens de texto enviadas pelo cliente
         private string DecifrarTexto(string txtCifradoB64)
         {
             //VARIÁVEL PARA GUARDAR O TEXTO CIFRADO EM BYTES
@@ -314,106 +313,6 @@ namespace Servidor
             //DEVOLVER TEXTO DECRIFRADO
             return textoDecifrado;
         }
-
-        private void DecryptFile(string inFile, byte[] privatekey, byte[] iv)
-        {
-            // Create instance of Aes for
-            // symetric decryption of the data.
-            Aes aes = Aes.Create();
-
-            // Create byte arrays to get the length of
-            // the encrypted key and IV.
-            // These values were stored as 4 bytes each
-            // at the beginning of the encrypted package.
-            byte[] LenK = new byte[4];
-            byte[] LenIV = new byte[4];
-
-            string outFile = inFile.Substring(0, inFile.LastIndexOf(".")) + "";
-
-            // Use FileStream objects to read the encrypted
-            // file (inFs) and save the decrypted file (outFs).
-            using (FileStream inFs = new FileStream(inFile, FileMode.Open))
-            {
-
-                inFs.Seek(0, SeekOrigin.Begin);
-                inFs.Seek(0, SeekOrigin.Begin);
-                inFs.Read(LenK, 0, 3);
-                inFs.Seek(4, SeekOrigin.Begin);
-                inFs.Read(LenIV, 0, 3);
-
-                // Convert the lengths to integer values.
-                int lenK = BitConverter.ToInt32(LenK, 0);
-                int lenIV = BitConverter.ToInt32(LenIV, 0);
-
-                // Determine the start postition of
-                // the ciphter text (startC)
-                // and its length(lenC).
-                int startC = lenK + lenIV + 8;
-                int lenC = (int)inFs.Length - startC;
-
-                // Create the byte arrays for
-                // the encrypted Aes key,
-                // the IV, and the cipher text.
-                byte[] KeyEncrypted = new byte[lenK];
-                byte[] IV = new byte[lenIV];
-
-                // Extract the key and IV
-                // starting from index 8
-                // after the length values.
-                inFs.Seek(8, SeekOrigin.Begin);
-                inFs.Read(KeyEncrypted, 0, lenK);
-                inFs.Seek(8 + lenK, SeekOrigin.Begin);
-                inFs.Read(IV, 0, lenIV);
-                //Directory.CreateDirectory(DecrFolder);
-                // Use RSACryptoServiceProvider
-                // to decrypt the AES key.
-                rsa = new RSACryptoServiceProvider();
-                byte[] KeyDecrypted = rsa.Decrypt(KeyEncrypted, false);
-
-                // Decrypt the key.
-                ICryptoTransform transform = aes.CreateDecryptor(KeyDecrypted, IV);
-
-                // Decrypt the cipher text from
-                // from the FileSteam of the encrypted
-                // file (inFs) into the FileStream
-                // for the decrypted file (outFs).
-                using (FileStream outFs = new FileStream(outFile, FileMode.Create))
-                {
-
-                    int count = 0;
-                    int offset = 0;
-
-                    // blockSizeBytes can be any arbitrary size.
-                    int blockSizeBytes = aes.BlockSize / 8;
-                    byte[] data = new byte[blockSizeBytes];
-
-                    // By decrypting a chunk a time,
-                    // you can save memory and
-                    // accommodate large files.
-
-                    // Start at the beginning
-                    // of the cipher text.
-                    inFs.Seek(startC, SeekOrigin.Begin);
-                    using (CryptoStream outStreamDecrypted = new CryptoStream(outFs, transform, CryptoStreamMode.Write))
-                    {
-                        do
-                        {
-                            count = inFs.Read(data, 0, blockSizeBytes);
-                            offset += count;
-                            outStreamDecrypted.Write(data, 0, count);
-                        }
-                        while (count > 0);
-
-                        outStreamDecrypted.FlushFinalBlock();
-                        outStreamDecrypted.Close();
-                    }
-                    outFs.Close();
-                }
-                inFs.Close();
-            }
-        }
-
-
 
     }
 }

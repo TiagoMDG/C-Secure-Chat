@@ -68,9 +68,8 @@ namespace Servidor
                 return saltedPasswordHashStored.SequenceEqual(hash);
                 //throw new NotImplementedException();
             }
-            catch (Exception e)
+            catch
             {
-                throw new Exception("An error occurred: " + e.Message);
                 return false;
             }
         }
@@ -178,46 +177,5 @@ namespace Servidor
             }
         }
 
-        //verifica a existencia de um nome de utizador repetido e devolve "true" ou "false" caso encontre ou não
-        public bool UserCheckUp(string username)
-        {          
-
-            SqlConnection conn = null;
-            try
-            {
-                // Configurar ligação à Base de Dados
-                conn = new SqlConnection();
-                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\Pedro Lourenço\Documents\Aulas\PSI_TS_PL1\Servidor\Users.mdf';Integrated Security=True");
-
-                // Abrir ligação à Base de Dados
-                conn.Open();
-
-                // Declaração dos parâmetros do comando SQL
-                SqlParameter paramUsername = new SqlParameter("@username", username);
-
-                // Declaração do comando SQL
-                String sql = "SELECT * FROM Users WHERE Username = @username";
-
-                // Prepara comando SQL para ser executado na Base de Dados
-                SqlCommand cmd = new SqlCommand(sql, conn);
-
-                // Introduzir valores aos parâmentros registados no comando SQL
-                cmd.Parameters.Add(paramUsername);
-
-                // Executar comando SQL
-                int lines = cmd.ExecuteNonQuery();
-
-                // Fechar ligação
-                conn.Close();
-                return true;
-
-            }
-            catch 
-            {
-                return false;
-
-            }
-
-        }
     }
 }
