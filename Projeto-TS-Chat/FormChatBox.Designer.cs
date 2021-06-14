@@ -29,6 +29,7 @@ namespace Projeto_TS_Chat
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormChatBox));
             this.textBoxMessage = new System.Windows.Forms.TextBox();
             this.buttonEnviar = new System.Windows.Forms.Button();
             this.buttonUpFile = new System.Windows.Forms.Button();
@@ -49,9 +50,11 @@ namespace Projeto_TS_Chat
             this.label6 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
             // textBoxMessage
@@ -59,12 +62,12 @@ namespace Projeto_TS_Chat
             this.textBoxMessage.Location = new System.Drawing.Point(13, 384);
             this.textBoxMessage.Multiline = true;
             this.textBoxMessage.Name = "textBoxMessage";
-            this.textBoxMessage.Size = new System.Drawing.Size(413, 43);
+            this.textBoxMessage.Size = new System.Drawing.Size(458, 43);
             this.textBoxMessage.TabIndex = 1;
             // 
             // buttonEnviar
             // 
-            this.buttonEnviar.Location = new System.Drawing.Point(338, 439);
+            this.buttonEnviar.Location = new System.Drawing.Point(383, 439);
             this.buttonEnviar.Name = "buttonEnviar";
             this.buttonEnviar.Size = new System.Drawing.Size(88, 43);
             this.buttonEnviar.TabIndex = 2;
@@ -75,7 +78,7 @@ namespace Projeto_TS_Chat
             // buttonUpFile
             // 
             this.buttonUpFile.AllowDrop = true;
-            this.buttonUpFile.Location = new System.Drawing.Point(244, 439);
+            this.buttonUpFile.Location = new System.Drawing.Point(289, 439);
             this.buttonUpFile.Name = "buttonUpFile";
             this.buttonUpFile.Size = new System.Drawing.Size(88, 43);
             this.buttonUpFile.TabIndex = 3;
@@ -99,7 +102,7 @@ namespace Projeto_TS_Chat
             this.messageChat.Location = new System.Drawing.Point(12, 12);
             this.messageChat.Name = "messageChat";
             this.messageChat.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.messageChat.Size = new System.Drawing.Size(413, 355);
+            this.messageChat.Size = new System.Drawing.Size(459, 355);
             this.messageChat.TabIndex = 5;
             // 
             // openFileDialog1
@@ -110,7 +113,7 @@ namespace Projeto_TS_Chat
             // 
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
-            this.tabControl1.Location = new System.Drawing.Point(453, 52);
+            this.tabControl1.Location = new System.Drawing.Point(520, 52);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(415, 291);
@@ -201,7 +204,7 @@ namespace Projeto_TS_Chat
             this.buttonLogin.Location = new System.Drawing.Point(128, 118);
             this.buttonLogin.Name = "buttonLogin";
             this.buttonLogin.Size = new System.Drawing.Size(106, 28);
-            this.buttonLogin.TabIndex = 9;
+            this.buttonLogin.TabIndex = 11;
             this.buttonLogin.Text = "Login";
             this.buttonLogin.UseVisualStyleBackColor = true;
             this.buttonLogin.Click += new System.EventHandler(this.buttonLogin_Click);
@@ -236,17 +239,27 @@ namespace Projeto_TS_Chat
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Consolas", 24F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(556, 12);
+            this.label1.Location = new System.Drawing.Point(623, 12);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(179, 37);
             this.label1.TabIndex = 12;
             this.label1.Text = "Bem-Vindo";
             // 
+            // pictureBox1
+            // 
+            this.pictureBox1.Image = global::Projeto_TS_Chat.Properties.Resources.Banner;
+            this.pictureBox1.Location = new System.Drawing.Point(505, 349);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(446, 133);
+            this.pictureBox1.TabIndex = 14;
+            this.pictureBox1.TabStop = false;
+            // 
             // FormChatBox
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(890, 494);
+            this.ClientSize = new System.Drawing.Size(963, 494);
+            this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.messageChat);
@@ -254,13 +267,18 @@ namespace Projeto_TS_Chat
             this.Controls.Add(this.buttonUpFile);
             this.Controls.Add(this.buttonEnviar);
             this.Controls.Add(this.textBoxMessage);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "FormChatBox";
-            this.Text = "Cliente Chat";
+            this.Text = "Secure Chat";
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -287,6 +305,7 @@ namespace Projeto_TS_Chat
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.PictureBox pictureBox1;
     }
 }
 

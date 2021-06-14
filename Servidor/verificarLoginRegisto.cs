@@ -22,8 +22,8 @@ namespace Servidor
             try
             {
                 // Configurar ligação à Base de Dados
-                conn = new SqlConnection();
-                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\Pedro Lourenço\Documents\Aulas\PSI_TS_PL1\Servidor\Users.mdf';Integrated Security=True");
+                conn = new SqlConnection();                                                                  //Mudar para o caminho na sua maquina
+                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\drede\Desktop\PSI_TS_PL1\Servidor\USERS.MDF';Integrated Security=True");
 
                 // Abrir ligação à Base de Dados
                 conn.Open();
@@ -81,8 +81,8 @@ namespace Servidor
             try
             {
                 // Configurar ligação à Base de Dados
-                conn = new SqlConnection();
-                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\Pedro Lourenço\Documents\Aulas\PSI_TS_PL1\Servidor\Users.mdf';Integrated Security=True");
+                conn = new SqlConnection();                                                                 //Mudar para o caminho na sua maquina
+                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\drede\Desktop\PSI_TS_PL1\Servidor\USERS.MDF';Integrated Security=True");
 
                 // Abrir ligação à Base de Dados
                 conn.Open();
@@ -136,8 +136,8 @@ namespace Servidor
             try
             {
                 // Configurar ligação à Base de Dados
-                conn = new SqlConnection();
-                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\Pedro Lourenço\Documents\Aulas\PSI_TS_PL1\Servidor\Users.mdf';Integrated Security=True");
+                conn = new SqlConnection();                                                                 //Mudar para o caminho na sua maquina
+                conn.ConnectionString = String.Format(@"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename='C:\Users\drede\Desktop\PSI_TS_PL1\Servidor\USERS.MDF';Integrated Security=True");
 
                 // Abrir ligação à Base de Dados
                 conn.Open();

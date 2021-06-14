@@ -69,6 +69,97 @@ namespace Projeto_TS_Chat
             enviarReceberChaves();
         }
 
+        /*      ELEMENTOS DO FORMULÁRIO
+                                             */
+
+        //BUTTON PARA ENVIAR MENSAGEM
+        private void buttonEnviar_Click(object sender, EventArgs e)
+        {
+            // Preparar mensagem para ser enviada
+            string msg = textBoxMessage.Text;
+            textBoxMessage.Clear();
+            messageChat.Items.Add(DateTime.Now.ToString("HH:mm:ss ") + username + ": "+msg);
+            
+            //preparar a mensagem para ser enviada
+            byte[] packet = protocolSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msg));
+
+            //enviar mensagem
+            networkStream.Write(packet, 0, packet.Length);
+            bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+
+            string msgRecebida = protocolSI.GetStringFromData();
+            messageChat.Items.Add(DateTime.Now.ToString("HH:mm:ss") + " Server: " + DecifrarTexto(msgRecebida));
+        }
+
+        //BUTTON PARA ENVIAR O FICHEIRO
+        private void buttonUpFile_Click(object sender, EventArgs e)
+        {
+            openFileDialog1.InitialDirectory = @"c:\";
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                string fName = openFileDialog1.FileName;
+                EncryptFile(fName);
+
+                int outFile = fName.LastIndexOf("\\") + 1;
+                string nomeFicheiro = fName.Substring(outFile, fName.LastIndexOf("") + 1 - outFile);
+                nomeFicheiro = nomeFicheiro + ".enc";
+                //envia o nome do ficheiro para o servidor
+                byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_4, CifrarTexto(nomeFicheiro));
+
+                //enviar mensagem
+                networkStream.Write(packet, 0, packet.Length);
+                bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+
+                MemoryStream destination = new MemoryStream();
+                FileStream fs = new FileStream(nomeFicheiro, FileMode.Open);
+                fs.CopyTo(destination);
+
+                //preparar a mensagem para ser enviada
+                packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_3, destination.ToArray());
+
+                //enviar mensagem
+                networkStream.Write(packet, 0, packet.Length);
+                bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
+
+                string msgRecebida = protocolSI.GetStringFromData();
+                messageChat.Items.Add(DateTime.Now.ToString("HH:mm:ss") + " Server: " + DecifrarTexto(msgRecebida));
+            }
+        }
+
+        //BUTTON PARA REGISTAR
+        private void buttonRegistar_Click(object sender, EventArgs e)
+        {
+            String pass = textBoxPwRegistar.Text;
+            String username = textBoxUserRegistar.Text;
+            byte[] salt = GenerateSalt(SALTSIZE);
+            byte[] hash = GenerateSaltedHash(pass, salt);
+
+            Register(username, hash, salt, publicKey);
+        }
+
+        //BUTTON PARA FAZER O LOGIN
+        private void buttonLogin_Click(object sender, EventArgs e)
+        {
+            String pass = textBoxPwLogin.Text;
+            String username = textBoxUserLogin.Text;
+
+            Login(username, pass);
+        }
+
+        //BUTTON PARA SAIR DO PROGRAMA
+        private void buttonSair_Click(object sender, EventArgs e)
+        {
+            //armazena todas as mensagens trocadas entre cliente e servidor do lado do cliente
+            System.IO.File.WriteAllLines("log.txt", messageChat.Items.Cast<string>().ToArray());
+
+            CloseClient();
+            this.Close();
+        }
+
+        /*          FUNÇÕES DO PROGRAMA
+                                             */
+
+        //FUNÇÃO ENVIAR E RECEBER CHAVES NO INICIO
         private void enviarReceberChaves()
         {
             publicKey = GerarChavePublica();
@@ -103,33 +194,7 @@ namespace Projeto_TS_Chat
             Console.WriteLine(chavePrivadaDecifrada);
         }
 
-        private void buttonEnviar_Click(object sender, EventArgs e)
-        {
-            // Preparar mensagem para ser enviada
-            string msg = textBoxMessage.Text;
-            textBoxMessage.Clear();
-            messageChat.Items.Add(username + ": "+msg);
-            
-            //preparar a mensagem para ser enviada
-            byte[] packet = protocolSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msg));
-
-            //enviar mensagem
-            networkStream.Write(packet, 0, packet.Length);
-            bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
-
-            string msgRecebida = protocolSI.GetStringFromData();
-            messageChat.Items.Add("Server: " + DecifrarTexto(msgRecebida));
-        }
-
-        private void buttonSair_Click(object sender, EventArgs e)
-        {
-            //armazena todas as mensagens trocadas entre cliente e servidor do lado do cliente
-            System.IO.File.WriteAllLines("log.txt", messageChat.Items.Cast<string>().ToArray());
-
-            CloseClient();
-            this.Close();
-        }
-
+        //FUNÇÃO PARA DESLIGAR O CLIENT
         private void CloseClient()
         {
             // Preparar envio da mensagem para desligar a ligação
@@ -140,6 +205,7 @@ namespace Projeto_TS_Chat
             client.Close();
         }
 
+        //FUNÇÃO PARA GERAR CHAVE PUBLICA
         private string GerarChavePublica()
         {
             rsa = new RSACryptoServiceProvider();
@@ -150,7 +216,7 @@ namespace Projeto_TS_Chat
             return publickey;
         }
 
-        //GERAR UMA CHAVE SIMÉTRICA A PARTIR DE UMA STRING
+        //FUNÇÃO PARA GERAR UMA CHAVE SIMÉTRICA A PARTIR DE UMA STRING
         private string GerarChavePrivada(string pass)
         {
             byte[] salt = new byte[] { 0, 1, 0, 8, 2, 9, 9, 7 };
@@ -163,7 +229,7 @@ namespace Projeto_TS_Chat
             return passB64;
         }
 
-        //GERAR UM VETOR DE INICIALIZAÇÃO A PARTIR DE UMA STRING
+        //FUNÇÃO GERAR UM VETOR DE INICIALIZAÇÃO A PARTIR DE UMA STRING
         private string GerarIv(string pass)
         {
             byte[] salt = new byte[] { 7, 8, 7, 8, 2, 5, 9, 5 };
@@ -196,8 +262,9 @@ namespace Projeto_TS_Chat
             string txtCifradoB64 = Convert.ToBase64String(txtCifrado);
             //DEVOLVER OS BYTES CRIADOS EM BASE64
             return txtCifradoB64;
-        }   
+        }
 
+        //FUNÇÃO PARA DECIFRAR O TEXTO
         private string DecifrarTexto(string txtCifradoB64)
         {
             //VARIÁVEL PARA GUARDAR O TEXTO CIFRADO EM BYTES
@@ -220,22 +287,22 @@ namespace Projeto_TS_Chat
             return textoDecifrado;
         }
 
+        //FUNÇÃO PARA CIFRAR FICHEIROS
         private void EncryptFile(string inFile)
         {
 
-            // Create instance of Aes for
-            // symmetric encryption of the data.
+            // Cria uma instância do AES para
+            // cifragem simétrica dos dados
             Aes aes = Aes.Create();
             ICryptoTransform transform = aes.CreateEncryptor();
 
-            // Use RSACryptoServiceProvider to
-            // encrypt the AES key.
-            // rsa is previously instantiated:
-            //    rsa = new RSACryptoServiceProvider(cspp);
+            // Utiliza o RSACryptoServiceProvider para
+            // cifrar a chave AES.
+
             byte[] keyEncrypted = rsa.Encrypt(aes.Key, false);
 
-            // Create byte arrays to contain
-            // the length values of the key and IV.
+            // Cria um array de bytes que contem
+            // o tamanho dos valores da chave e do IV
             byte[] LenK = new byte[4];
             byte[] LenIV = new byte[4];
 
@@ -244,16 +311,16 @@ namespace Projeto_TS_Chat
             int lIV = aes.IV.Length;
             LenIV = BitConverter.GetBytes(lIV);
 
-            // Write the following to the FileStream
-            // for the encrypted file (outFs):
-            // - length of the key
-            // - length of the IV
-            // - ecrypted key
-            // - the IV
-            // - the encrypted cipher content
+            // Escreve os seguintes para o filestream
+            // para o ficheiro cifrado (outFs):
+            // - tamanho da chave
+            // - tamanho do IV
+            // - chave cifrada
+            // - o IV
+            // - o conteudo cifrado
 
             int startFileName = inFile.LastIndexOf("\\") + 1;
-            // Change the file's extension to ".enc"
+            // Muda a extensão do ficheiro para ".enc"
             string outFile = inFile.Substring(startFileName, inFile.LastIndexOf("") + 1 - startFileName) + ".enc";
 
             using (FileStream outFs = new FileStream(outFile, FileMode.Create))
@@ -264,18 +331,18 @@ namespace Projeto_TS_Chat
                 outFs.Write(keyEncrypted, 0, lKey);
                 outFs.Write(aes.IV, 0, lIV);
 
-                // Now write the cipher text using
-                // a CryptoStream for encrypting.
+                // Agora escreve o conteudo do ficheiro cifrado utilizando
+                // a CryptoStream para cifragem.
                 using (CryptoStream outStreamEncrypted = new CryptoStream(outFs, transform, CryptoStreamMode.Write))
                 {
 
-                    // By encrypting a chunk at
-                    // a time, you can save memory
-                    // and accommodate large files.
+                    // Ao cifrar um bloco de cada vez
+                    // dá para poupar memória do sistema
+                    // e acomodar ficheiros maiores
                     int count = 0;
                     int offset = 0;
 
-                    // blockSizeBytes can be any arbitrary size.
+                    // blockSizeBytes pode ser qualquer valor arbitrário
                     int blockSizeBytes = aes.BlockSize / 8;
                     byte[] data = new byte[blockSizeBytes];
                     int bytesRead = 0;
@@ -299,59 +366,7 @@ namespace Projeto_TS_Chat
             }
         }
 
-
-        private void buttonUpFile_Click(object sender, EventArgs e)
-        {
-            openFileDialog1.InitialDirectory = @"c:\";
-            if (openFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                string fName = openFileDialog1.FileName;
-                EncryptFile(fName);
-
-                int outFile = fName.LastIndexOf("\\") + 1;
-                string nomeFicheiro = fName.Substring(outFile, fName.LastIndexOf("") + 1 - outFile);
-                nomeFicheiro = nomeFicheiro + ".enc";
-                //envia o nome do ficheiro para o servidor
-                byte[] packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_4, CifrarTexto(nomeFicheiro));
-
-                //enviar mensagem
-                networkStream.Write(packet, 0, packet.Length);
-                bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
-
-                MemoryStream destination = new MemoryStream();
-                FileStream fs = new FileStream(nomeFicheiro, FileMode.Open);
-                fs.CopyTo(destination);
-
-                //preparar a mensagem para ser enviada
-                packet = protocolSI.Make(ProtocolSICmdType.USER_OPTION_3, destination.ToArray());
-
-                //enviar mensagem
-                networkStream.Write(packet, 0, packet.Length);
-                bytesRead = networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
-
-                string msgRecebida = protocolSI.GetStringFromData();
-                messageChat.Items.Add("Server: " + DecifrarTexto(msgRecebida));
-            } 
-        }
-
-        private void buttonRegistar_Click(object sender, EventArgs e)
-        {
-            String pass = textBoxPwRegistar.Text;
-            String username = textBoxUserRegistar.Text;
-            byte[] salt = GenerateSalt(SALTSIZE);
-            byte[] hash = GenerateSaltedHash(pass, salt);
-
-            Register(username, hash, salt, publicKey);
-        }
-
-        private void buttonLogin_Click(object sender, EventArgs e)
-        {
-            String pass = textBoxPwLogin.Text;
-            String username = textBoxUserLogin.Text;
-
-            Login(username, pass);
-        }
-
+        //FUNÇÃO DE LOGIN
         private void Login(string user, string password)
         {
             //Login opçao SI USER_OPTION_1
@@ -381,6 +396,7 @@ namespace Projeto_TS_Chat
             }
         }
 
+        //FUNÇÃO DE REGISTO
         private void Register(string user, byte[] passHash, byte[] passSalt, string publicKey)
         {
             //registar opçao SI USER_OPTION_2
@@ -401,8 +417,11 @@ namespace Projeto_TS_Chat
             {
                 networkStream.Read(protocolSI.Buffer, 0, protocolSI.Buffer.Length);
             }
+
+            MessageBox.Show("Seja Bem-vindo " + user + "! Pode agora fazer login com a sua conta!", "Registo efetuado com sucesso!", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        //FUNÇÃO PARA GERAR O SALT
         private static byte[] GenerateSalt(int size)
         {
             //Generate a cryptographic random number.
@@ -412,12 +431,14 @@ namespace Projeto_TS_Chat
             return buff;
         }
 
+        //FUNÇÃO PARA GERAR UMA SALTED HASH
         private static byte[] GenerateSaltedHash(string plainText, byte[] salt)
         {
             Rfc2898DeriveBytes rfc2898 = new Rfc2898DeriveBytes(plainText, salt, NUMBER_OF_ITERATIONS);
             return rfc2898.GetBytes(32);
         }
 
+        //FUNÇÃO PARA DESATIVAR ELEMENTOS DO CHAT
         private void DisableChat()
         {
             textBoxMessage.Enabled = false;
@@ -426,6 +447,7 @@ namespace Projeto_TS_Chat
             buttonUpFile.Enabled = false;
         }
 
+        //FUNÇÃO PARA ATIVAR ELEMENTOS DO CHAT
         private void EnableChat()
         {
             textBoxMessage.Enabled = true;

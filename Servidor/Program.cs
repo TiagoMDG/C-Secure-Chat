@@ -32,7 +32,7 @@ namespace Servidor
 
             while (true)
             {
-                //aceitar lligaçoes
+                //aceitar ligaçoes
                 TcpClient client = listener.AcceptTcpClient();
                 clientCounter++;
                 Console.WriteLine("Clientes conectados: {0}", clientCounter);
@@ -113,8 +113,8 @@ namespace Servidor
                         networkStream.Write(msg, 0, msg.Length);
 
                         //escreve para o ficheiro ConsoleLog.txt as chaves 
-                        sw.WriteLine("Chave Publica: " + chavePublica);
-                        sw.WriteLine("Chave Privada: " + chavePrivada);
+                        sw.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " Chave Publica: " + chavePublica);
+                        sw.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " Chave Privada: " + chavePrivada);
 
                         break;
 
@@ -133,8 +133,8 @@ namespace Servidor
                         //se bem sucedido deixa o utilizador entrar no sistema se não termina a comunicação
                         if (loginRegisto.VerifyLogin(username, password, global.chavepublica))
                         {
-                            Console.WriteLine("Utilizador " + username + " autorizado!");
-                            sw.WriteLine("\nUtilizador " + username + " autorizado!");//escreve para log o resultado da tentativa de login
+                            Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " Utilizador " + username + " autorizado!");
+                            sw.WriteLine("\n" + DateTime.Now.ToString("HH:mm:ss") + " Utilizador " + username + " autorizado!");//escreve para log o resultado da tentativa de login
 
                             //envia mensagem para o cliente a acusar login bem sucedido
                             ack = protocoloSI.Make(ProtocolSICmdType.ACK);                            
@@ -142,8 +142,8 @@ namespace Servidor
                         }
                         else
                         {
-                            Console.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");
-                            sw.WriteLine("ERRO!\nUtilizador: " + username + " invalido ou nao existente!");//escreve para log o resultado da tentativa de login
+                            Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " ERRO! Utilizador " + username + " invalido ou nao existente!");
+                            sw.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " ERRO! Utilizador " + username + " invalido ou nao existente!");//escreve para log o resultado da tentativa de login
 
                             //envia mensagem para o cliente a terminar a ligação
                             ack = protocoloSI.Make(ProtocolSICmdType.EOT);
@@ -171,6 +171,9 @@ namespace Servidor
                         //chama a função de registo de utilizadores na base de dados
                         loginRegisto.Register(username, Convert.FromBase64String(stringSaltedPasswordHash), Convert.FromBase64String(salt), global.chavepublica);
 
+                        Console.WriteLine(DateTime.Now.ToString("HH:mm:ss ") + username + " registado com sucesso!");
+                        sw.WriteLine(DateTime.Now.ToString("HH:mm:ss ") + username + " registado com sucesso!");
+
                         //envia mensagem para o cliente em como o registo foi bem sucedido
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
                         networkStream.Write(ack, 0, ack.Length);
@@ -182,12 +185,12 @@ namespace Servidor
                         //recupera e decifra a nensagem de texto enviada pelo cliente
                         string msgRecebida = DecifrarTexto(protocoloSI.GetStringFromData());
 
-                        Console.WriteLine(username +"("+ clientID +")" + " enviou a seguinte mensagem: " + msgRecebida);
+                        Console.WriteLine(DateTime.Now.ToString("HH:mm:ss ") + username +"("+ clientID +")" + " enviou a seguinte mensagem: " + msgRecebida);
                         //Mensagem a enviar para o cliente apos recepção de mensagem de texto
                         string msgResposta = "Mensagem recebida pelos nossos servidores, obrigado por nos escolher.";
 
-                        sw.WriteLine(username + ": " + msgRecebida);
-                        sw.WriteLine("Server: " + msgResposta);
+                        sw.WriteLine(DateTime.Now.ToString("HH:mm:ss ") + username + ": " + msgRecebida);
+                        sw.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " Server: " + msgResposta);
 
                         //Envia mensagem de confirmaçao de recepçao, cifrada, para o cliente
                         byte[] packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));                        
@@ -199,7 +202,7 @@ namespace Servidor
                         //recebe o nome do ficheiro
                         nomeFicheiro = protocoloSI.GetStringFromData();
                         //esccreve na consola do servidor o nome do ficheiro e a informção de quem o enviou
-                        Console.WriteLine(username + "(" + clientID + ")" + " enviou a seguinte mensagem: " + DecifrarTexto(nomeFicheiro));
+                        Console.WriteLine(DateTime.Now.ToString("HH:mm:ss ") + username + "(" + clientID + ")" + " enviou a seguinte mensagem: " + DecifrarTexto(nomeFicheiro));
                         
                         //Enviar mensagem de confirmaçao de recepçao do nome do fichiero para o cliente
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
@@ -217,8 +220,8 @@ namespace Servidor
                         msgResposta = "Ficheiro recebido pelos nossos servidores, obrigado por nos escolher.";
 
                         //escreve no ficheiro de log o nome de ficheiro enviado pelo cliente e a resposta que o servidor enviou
-                        sw.WriteLine(username + ": " + DecifrarTexto(nomeFicheiro));
-                        sw.WriteLine("Server: " + msgResposta);
+                        sw.WriteLine(DateTime.Now.ToString("HH:mm:ss ") + username + ": " + DecifrarTexto(nomeFicheiro));
+                        sw.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " Server: " + msgResposta);
 
                         //Enviar mensagem de confirmaçao de recepçao para o cliente
                         packet = protocoloSI.Make(ProtocolSICmdType.DATA, CifrarTexto(msgResposta));
@@ -226,8 +229,8 @@ namespace Servidor
                         break;
                         
                     case ProtocolSICmdType.EOT:// recebe este protcolo quando o clinte encerra comunicações
-                        Console.WriteLine("Ending thread from client {0}({1})", username,clientID);
-                        sw.WriteLine("Ending thread from client {0}({1})", username, clientID);
+                        Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " Ending thread from client {0}({1})", username,clientID);
+                        sw.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " Ending thread from client {0}({1})", username, clientID);
                         ack = protocoloSI.Make(ProtocolSICmdType.ACK);
                         //envia mensagem para stream
                         networkStream.Write(ack, 0, ack.Length);
