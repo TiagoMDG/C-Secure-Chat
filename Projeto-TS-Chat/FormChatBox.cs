@@ -25,12 +25,6 @@ namespace Projeto_TS_Chat
         CspParameters cspp = new CspParameters();
         private RSACryptoServiceProvider rsa;
 
-        const string EncrFolder = @"c:\z_TS\Encrypt\";
-        const string DecrFolder = @"c:\z_TS\Decrypt\";
-        const string SrcFolder = @"c:\z_TS\docs\";
-        const string PubKeyFile = "rsaPublicKey.txt";
-        const string keyName = "Key01";
-
         string publickey;
         int bytesRead = 0;
 
@@ -308,7 +302,7 @@ namespace Projeto_TS_Chat
 
         private void buttonUpFile_Click(object sender, EventArgs e)
         {
-            openFileDialog1.InitialDirectory = SrcFolder;
+            openFileDialog1.InitialDirectory = @"c:\";
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 string fName = openFileDialog1.FileName;
